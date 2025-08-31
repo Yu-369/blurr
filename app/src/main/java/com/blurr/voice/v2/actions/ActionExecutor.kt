@@ -249,8 +249,12 @@ class ActionExecutor(private val finger: Finger) {
                     ActionResult(error = "Intent '$name' missing or invalid parameters: ${params}")
                 } else {
                     return try {
-                        finger.launchIntent(intent)
-                        ActionResult(longTermMemory = "Launched intent '$name' with params ${params}")
+                        val launchSuccess = finger.launchIntent(intent)
+                        if (launchSuccess) {
+                            ActionResult(longTermMemory = "Launched intent '$name' with params ${params}")
+                        } else {
+                            ActionResult(error = "Failed to launch intent '$name' with params ${params}")
+                        }
                     } catch (t: Throwable) {
                         ActionResult(error = "Failed to launch intent '$name': ${t.message}")
                     }

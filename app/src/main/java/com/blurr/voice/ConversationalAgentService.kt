@@ -22,6 +22,7 @@ import com.blurr.voice.agent.v1.ClarificationAgent
 import com.blurr.voice.agent.v1.InfoPool
 import com.blurr.voice.agent.v1.VisionHelper
 import com.blurr.voice.agent.v1.VisionMode
+import com.blurr.voice.api.Eyes
 //import com.blurr.voice.services.AgentTaskService
 import com.blurr.voice.utilities.SpeechCoordinator
 import android.os.Handler
@@ -83,6 +84,7 @@ class ConversationalAgentService : Service() {
     private val memoryManager by lazy { MemoryManager.getInstance(this) }
     private val usedMemories = mutableSetOf<String>() // Track memories already used in this conversation
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private val eyes by lazy { Eyes(this) }
 
 
     companion object {
@@ -91,7 +93,7 @@ class ConversationalAgentService : Service() {
         var isRunning = false
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate() {
         super.onCreate()
         Log.d("ConvAgent", "Service onCreate")
@@ -116,7 +118,7 @@ class ConversationalAgentService : Service() {
 
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun showInputBoxIfNeeded() {
         // This function ensures the input box is always configured correctly
         // whether it's the first time or a subsequent turn in text mode.
@@ -156,7 +158,7 @@ class ConversationalAgentService : Service() {
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("ConvAgent", "Service onStartCommand")
         startForeground(NOTIFICATION_ID, createNotification())
@@ -189,7 +191,7 @@ class ConversationalAgentService : Service() {
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.R)
     private suspend fun speakAndThenListen(text: String, draw: Boolean = true) {
         updateSystemPromptWithMemories()
         ttsManager.setCaptionsEnabled(draw)
@@ -317,7 +319,7 @@ class ConversationalAgentService : Service() {
 
 
     // --- CHANGED: Rewritten to process the new custom text format ---
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun processUserInput(userInput: String) {
         serviceScope.launch {
             removeClarificationQuestions()
@@ -545,10 +547,15 @@ class ConversationalAgentService : Service() {
 
             {agent_status_context}
 
+            ### Current Screen Context ###
+            {screen_context}
+            ### End Screen Context ###
+
             Some Guideline:
-            1. If the user ask you to summarize the screen, just send the task to the executor to summarize the screen getting straight to the point. No questions.
-            2. If the user ask you to do something creative, you do this task and be the most creative person in the world.
-            3. If you know the user's name from the memories, refer to them by their name to make the conversation more personal and friendly.
+            1. If the user ask you to do something creative, you do this task and be the most creative person in the world.
+            2. If you know the user's name from the memories, refer to them by their name to make the conversation more personal and friendly.
+            3. Use the current screen context to better understand what the user is looking at and provide more relevant responses.
+            4. If the user asks about something on the screen, you can reference the screen content directly.
 
             Use these memories to answer the user's question with his personal data
             ### Memory Context Start ###
@@ -604,14 +611,65 @@ class ConversationalAgentService : Service() {
     }
 
     /**
-     * Updates the system prompt with relevant memories from the database
+     * Gets current screen context using the Eyes class
      */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private suspend fun getScreenContext(): String {
+        return try {
+            val currentApp = eyes.getCurrentActivityName()
+            val screenXml = eyes.openXMLEyes()
+            val keyboardStatus = eyes.getKeyBoardStatus()
+            
+            // Track screen context usage
+            val screenContextBundle = android.os.Bundle().apply {
+                putString("current_app", currentApp.take(50)) // Limit length for analytics
+                putBoolean("keyboard_visible", keyboardStatus)
+                putInt("screen_xml_length", screenXml.length)
+            }
+            firebaseAnalytics.logEvent("screen_context_captured", screenContextBundle)
+            
+            """
+            Current App: $currentApp
+            Keyboard Visible: $keyboardStatus
+            Screen Content:
+            $screenXml
+            """.trimIndent()
+        } catch (e: Exception) {
+            Log.e("ConvAgent", "Error getting screen context", e)
+            
+            // Track screen context errors
+            val errorBundle = android.os.Bundle().apply {
+                putString("error_message", e.message?.take(100) ?: "Unknown error")
+                putString("error_type", e.javaClass.simpleName)
+            }
+            firebaseAnalytics.logEvent("screen_context_error", errorBundle)
+            
+            "Screen context unavailable"
+        }
+    }
+
+    /**
+     * Updates the system prompt with relevant memories and current screen context
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
     private suspend fun updateSystemPromptWithMemories() {
         try {
+            // Get current screen context
+            val screenContext = getScreenContext()
+            Log.d("ConvAgent", "Retrieved screen context: ${screenContext.take(200)}...")
+            
             // Get the last user message to search for relevant memories
             val lastUserMessage = conversationHistory.lastOrNull { it.first == "user" }
                 ?.second?.filterIsInstance<TextPart>()
                 ?.joinToString(" ") { it.text } ?: ""
+
+            // Get current prompt
+            val currentPrompt = conversationHistory.first().second
+                .filterIsInstance<TextPart>()
+                .firstOrNull()?.text ?: ""
+
+            // Update screen context first
+            var updatedPrompt = currentPrompt.replace("{screen_context}", screenContext)
 
             if (lastUserMessage.isNotEmpty()) {
                 Log.d("ConvAgent", "Searching for memories relevant to: ${lastUserMessage.take(100)}...")
@@ -633,34 +691,40 @@ class ConversationalAgentService : Service() {
                         // Add new memories to the used set
                         newMemories.forEach { usedMemories.add(it) }
 
-                        // Get current memory context from system prompt
-                        val currentPrompt = conversationHistory.first().second
-                            .filterIsInstance<TextPart>()
-                            .firstOrNull()?.text ?: ""
-
-                        val currentMemoryContext = extractCurrentMemoryContext(currentPrompt)
+                        val currentMemoryContext = extractCurrentMemoryContext(updatedPrompt)
                         val allMemories = (currentMemoryContext + newMemories).distinct()
 
                         // Update the system prompt with all memories
                         val memoryContext = allMemories.joinToString("\n") { "- $it" }
-                        val updatedPrompt = currentPrompt.replace("{memory_context}", memoryContext)
+                        updatedPrompt = updatedPrompt.replace("{memory_context}", memoryContext)
 
-                        if (updatedPrompt.isNotEmpty()) {
-                            // Replace the first system message with updated prompt
-                            conversationHistory = conversationHistory.toMutableList().apply {
-                                set(0, "user" to listOf(TextPart(updatedPrompt)))
-                            }
-                            Log.d("ConvAgent", "Updated system prompt with ${allMemories.size} total memories (${newMemories.size} new)")
-                        }
+                        Log.d("ConvAgent", "Updated system prompt with ${allMemories.size} total memories (${newMemories.size} new)")
                     } else {
                         Log.d("ConvAgent", "No new memories to add (all relevant memories already used)")
+                        // Still need to replace the placeholder if no new memories
+                        val currentMemoryContext = extractCurrentMemoryContext(updatedPrompt)
+                        val memoryContext = currentMemoryContext.joinToString("\n") { "- $it" }
+                        updatedPrompt = updatedPrompt.replace("{memory_context}", memoryContext)
                     }
                 } else {
                     Log.d("ConvAgent", "No relevant memories found")
+                    // Replace with empty context if no memories found
+                    updatedPrompt = updatedPrompt.replace("{memory_context}", "No relevant memories found")
                 }
+            } else {
+                // Replace with empty context if no user message
+                updatedPrompt = updatedPrompt.replace("{memory_context}", "")
+            }
+
+            if (updatedPrompt.isNotEmpty()) {
+                // Replace the first system message with updated prompt
+                conversationHistory = conversationHistory.toMutableList().apply {
+                    set(0, "user" to listOf(TextPart(updatedPrompt)))
+                }
+                Log.d("ConvAgent", "Updated system prompt with screen context and memories")
             }
         } catch (e: Exception) {
-            Log.e("ConvAgent", "Error updating system prompt with memories", e)
+            Log.e("ConvAgent", "Error updating system prompt with memories and screen context", e)
         }
     }
 

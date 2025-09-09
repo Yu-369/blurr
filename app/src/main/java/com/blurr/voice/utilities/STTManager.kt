@@ -22,10 +22,12 @@ class STTManager(private val context: Context) {
     private var onPartialResultCallback: ((String) -> Unit)? = null
     private var isInitialized = false
     private val visualizerManager = STTVisualizer(context)
+    private val COMPLETE_SILENCE_MS = 2500  // time of silence to consider input complete
+    private val POSSIBLE_SILENCE_MS = 2000  // shorter silence hint window
+    private val MIN_UTTERANCE_MS     = 1500 // enforce a minimum listening duration
 
     
-    // Remove initialization from constructor - will be done lazily on main thread
-    
+
     private fun initializeSpeechRecognizer() {
         if (isInitialized) return
         
@@ -58,12 +60,10 @@ class STTManager(private val context: Context) {
             }
 
             override fun onRmsChanged(rmsdB: Float) {
-                // --- NEW: Invoke the callback with the new audio level ---
                 visualizerManager.onRmsChanged(rmsdB)
             }
             
             override fun onBufferReceived(buffer: ByteArray?) {
-                // Optional: Can be used for real-time processing
             }
             
             override fun onEndOfSpeech() {
@@ -113,7 +113,6 @@ class STTManager(private val context: Context) {
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
-                // v-- IMPLEMENT THIS METHOD --v
                 val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     val partialText = matches[0]
@@ -123,7 +122,6 @@ class STTManager(private val context: Context) {
             }
             
             override fun onEvent(eventType: Int, params: Bundle?) {
-                // Optional: Handle specific events
             }
         }
     }
@@ -144,7 +142,6 @@ class STTManager(private val context: Context) {
         this.onListeningStateChange = onListeningStateChange
         this.onPartialResultCallback = onPartialResult
 
-        // Initialize on main thread if needed
         CoroutineScope(Dispatchers.Main).launch {
             initializeSpeechRecognizer()
             
@@ -160,6 +157,9 @@ class STTManager(private val context: Context) {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+//                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, COMPLETE_SILENCE_MS)
+//                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, POSSIBLE_SILENCE_MS)
+//                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, MIN_UTTERANCE_MS)
             }
             
             try {

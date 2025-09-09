@@ -10,6 +10,7 @@ import com.blurr.voice.v2.llm.GeminiApi
 import com.blurr.voice.v2.llm.GeminiMessage
 import com.blurr.voice.v2.message_manager.MemoryManager
 import com.blurr.voice.v2.perception.Perception
+import com.blurr.voice.utilities.SpeechCoordinator
 import kotlinx.coroutines.delay
 
 /**
@@ -37,6 +38,9 @@ class Agent(
     // The agent's internal state, which is updated at each step.
     val state: AgentState = AgentState()
     private val TAG = "AgentV2"
+    
+    // Speech coordinator for voice notifications
+    private val speechCoordinator = SpeechCoordinator.getInstance(context)
 
     // A complete, long-term record of the entire session.
     // We use <Unit> because we haven't defined a custom structured output for the 'done' action yet.
@@ -83,6 +87,7 @@ class Agent(
                 memoryManager.addContextMessage(GeminiMessage(text = "System Note: Your previous output was not valid JSON. Please ensure your response is correctly formatted."))
                 if (state.consecutiveFailures >= settings.maxFailures) {
                     Log.d(TAG,"❌ Agent failed too many times consecutively. Stopping.")
+                    speechCoordinator.speakToUser("Agent failed after multiple attempts. Stopping execution.")
                     break
                 }
                 delay(1000) // Wait a moment before retrying
@@ -122,6 +127,7 @@ class Agent(
             // --- Check for Task Completion ---
             if (actionResults.any { it.isDone == true }) {
                 Log.d(TAG,"✅ Agent finished the task.")
+                speechCoordinator.speakToUser("Task completed successfully.")
                 state.stopped = true
             }
 
@@ -131,8 +137,8 @@ class Agent(
 
         // --- Loop Finished ---
         if (state.nSteps > maxSteps) {
-
             Log.d(TAG,"--- 🏁 Agent reached max steps. Stopping. ---")
+            speechCoordinator.speakToUser("Agent reached maximum steps limit. Stopping execution.")
         } else {
             Log.d(TAG,"--- 🏁 Agent run finished. ---")
         }

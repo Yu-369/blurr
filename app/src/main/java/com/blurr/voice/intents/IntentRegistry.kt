@@ -2,6 +2,10 @@ package com.blurr.voice.intents
 
 import android.content.Context
 import android.util.Log
+import com.blurr.voice.intents.impl.DialIntent
+import com.blurr.voice.intents.impl.EmailComposeIntent
+import com.blurr.voice.intents.impl.ShareTextIntent
+import com.blurr.voice.intents.impl.ViewUrlIntent
 
 /**
  * Discovers and manages AppIntent implementations.
@@ -16,7 +20,10 @@ object IntentRegistry {
     @Synchronized
     @Suppress("UNUSED_PARAMETER")
     fun init(context: Context) {
-        register(com.blurr.voice.intents.impl.DialIntent())
+        register(DialIntent())
+        register(ViewUrlIntent())
+        register(ShareTextIntent())
+        register(EmailComposeIntent())
         initialized = true
     }
     fun register(intent: AppIntent) {

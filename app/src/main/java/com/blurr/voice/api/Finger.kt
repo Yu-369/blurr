@@ -94,6 +94,15 @@ class Finger(private val context: Context) {
     }
 
     /**
+     * Performs a long press (press and hold) at a specific point on the screen.
+     */
+    fun longPress(x: Int, y: Int) {
+        Log.d(TAG, "Long pressing at ($x, $y)")
+        // This assumes your ScreenInteractionService has a method `longClickOnPoint`
+        service?.longClickOnPoint(x.toFloat(), y.toFloat())
+    }
+
+    /**
      * Swipes between two points on the screen.
      */
     fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, duration: Int = 1000) {
@@ -150,7 +159,7 @@ class Finger(private val context: Context) {
      * @param pixels The number of pixels to scroll.
      * @param duration The duration of the swipe in milliseconds.
      */
-    fun scrollDown(pixels: Int, duration: Int = 500) {
+    fun scrollUp(pixels: Int, duration: Int = 500) {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
@@ -173,7 +182,7 @@ class Finger(private val context: Context) {
      * @param pixels The number of pixels to scroll.
      * @param duration The duration of the swipe in milliseconds.
      */
-    fun scrollUp(pixels: Int, duration: Int = 500) {
+    fun scrollDown(pixels: Int, duration: Int = 500) {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels

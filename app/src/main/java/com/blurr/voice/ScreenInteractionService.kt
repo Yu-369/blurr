@@ -562,6 +562,30 @@ class ScreenInteractionService : AccessibilityService() {
 
         dispatchGesture(gesture, null, null)
     }
+    /**
+     * Performs a long press gesture at a specific point on the screen.
+     * @param x The x-coordinate of the long press.
+     * @param y The y-coordinate of the long press.
+     */
+    fun longClickOnPoint(x: Float, y: Float) {
+        // Show visual feedback for the tap if the debug flag is enabled
+        if (DEBUG_SHOW_TAPS) {
+            showDebugTap(x, y)
+        }
+
+        val path = Path().apply {
+            moveTo(x, y)
+        }
+        // A long press is essentially a tap that is held down.
+        // 600ms is a common duration for a long press.
+        val longPressStroke = GestureDescription.StrokeDescription(path, 0, 2000L)
+
+        val gesture = GestureDescription.Builder()
+            .addStroke(longPressStroke)
+            .build()
+
+        dispatchGesture(gesture, null, null)
+    }
 
     /**
      * Scrolls the screen down by a given number of pixels with more precision.

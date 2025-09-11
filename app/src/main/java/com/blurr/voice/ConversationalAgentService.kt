@@ -233,7 +233,12 @@ class ConversationalAgentService : Service() {
                     hasHeardFirstUtterance = true
                     Log.d("ConvAgent", "First utterance received, triggering memory extraction")
                     serviceScope.launch {
-                        updateSystemPromptWithMemories()
+                        try {
+                            updateSystemPromptWithMemories()
+                        } catch (e: Exception) {
+                            Log.e("ConvAgent", "Error during first utterance memory extraction", e)
+                            // Continue execution even if memory extraction fails
+                        }
                     }
                 }
                 
@@ -313,7 +318,12 @@ class ConversationalAgentService : Service() {
                     hasHeardFirstUtterance = true
                     Log.d("ConvAgent", "First utterance received, triggering memory extraction")
                     serviceScope.launch {
-                        updateSystemPromptWithMemories()
+                        try {
+                            updateSystemPromptWithMemories()
+                        } catch (e: Exception) {
+                            Log.e("ConvAgent", "Error during first utterance memory extraction", e)
+                            // Continue execution even if memory extraction fails
+                        }
                     }
                 }
                 
@@ -432,7 +442,12 @@ class ConversationalAgentService : Service() {
             if (!hasHeardFirstUtterance) {
                 hasHeardFirstUtterance = true
                 Log.d("ConvAgent", "First utterance received via processUserInput, triggering memory extraction")
-                updateSystemPromptWithMemories()
+                try {
+                    updateSystemPromptWithMemories()
+                } catch (e: Exception) {
+                    Log.e("ConvAgent", "Error during first utterance memory extraction", e)
+                    // Continue execution even if memory extraction fails
+                }
             }
 
             conversationHistory = addResponse("user", userInput, conversationHistory)

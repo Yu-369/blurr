@@ -3,6 +3,7 @@ package com.blurr.voice.v2
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -84,8 +85,8 @@ class AgentService : Service() {
 //
 //
     companion object {
-        private const val NOTIFICATION_CHANNEL_ID = "AgentServiceChannel"
-        private const val NOTIFICATION_ID = 1
+        private const val NOTIFICATION_CHANNEL_ID = "AgentServiceChannelV2"
+        private const val NOTIFICATION_ID = 14
         private const val EXTRA_TASK = "com.blurr.voice.v2.EXTRA_TASK"
         private const val ACTION_STOP_SERVICE = "com.blurr.voice.v2.ACTION_STOP_SERVICE"
 
@@ -243,9 +244,26 @@ class AgentService : Service() {
      * Creates the persistent notification for the foreground service.
      */
     private fun createNotification(contentText: String): Notification {
+        // Create PendingIntent for the stop action
+        val stopIntent = Intent(this, AgentService::class.java).apply {
+            action = ACTION_STOP_SERVICE
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            0,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("AI Agent Active")
             .setContentText(contentText)
+            .addAction(
+                android.R.drawable.ic_media_pause, // Using built-in pause icon as stop button
+                "Stop Agent",
+                stopPendingIntent
+            )
+            .setOngoing(true) // Makes notification persistent and harder to dismiss
             // .setSmallIcon(R.drawable.ic_agent_notification) // TODO: Add a notification icon
             .build()
     }

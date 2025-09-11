@@ -117,6 +117,27 @@ class ActionExecutor(private val finger: Finger) {
                     includeExtractedContentOnlyOnce = true
                 )
             }
+            is Action.LongPressElement -> {
+                val elementNode = screenAnalysis.elementMap[action.elementId]
+                if (elementNode != null) {
+                    val bounds = elementNode.attributes["bounds"]
+                    val text = elementNode.getVisibleText().replace("\n", " ")
+                    val resourceId = elementNode.attributes["resource-id"] ?: ""
+                    val extraInfo = elementNode.extraInfo
+                    val className = (elementNode.attributes["class"] ?: "").removePrefix("android.")
+
+                    if (bounds != null) {
+                        val (centerX, centerY) = getCenterFromBounds(bounds)
+                        // Assuming finger has a longPress method. Adjust if necessary.
+                        finger.longPress(centerX, centerY)
+                        ActionResult(longTermMemory = "Long-pressed element text:$text <$resourceId> <$extraInfo> <$className>")
+                    } else {
+                        ActionResult(error = "Element with ID ${action.elementId} has no bounds information.")
+                    }
+                } else {
+                    ActionResult(error = "Element with ID ${action.elementId} not found in the current screen state.")
+                }
+            }
             is Action.OpenApp -> {
                 val packageName = findPackageNameFromAppName(action.appName, context)
                 if (packageName != null) {

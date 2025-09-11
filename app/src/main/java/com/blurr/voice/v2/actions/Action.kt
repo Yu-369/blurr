@@ -22,6 +22,7 @@ data class ParamSpec(val name: String, val type: KClass<*>, val description: Str
 sealed class Action {
     // Each action is a data class (if it has args) or an object (if it doesn't).
     // Note: Property names here follow Kotlin's camelCase convention.
+    data class LongPressElement(val elementId: Int) : Action()
     data class TapElement(val elementId: Int) : Action()
     data object SwitchApp : Action()
     data object Back : Action()
@@ -129,16 +130,22 @@ sealed class Action {
                 params = listOf(ParamSpec("app_name", String::class, "The name of the app.")),
                 build = { args -> OpenApp(args["app_name"] as String) }
             ),
-            "scroll_down" to Spec(
-                name = "scroll_down",
-                description = "Scroll down by the specified amount of pixels.",
-                params = listOf(ParamSpec("amount", Int::class, "Amount of pixels to scroll down.")),
+            "swipe_down" to Spec(
+                name = "swipe_down",
+                description = "swipe down by the specified amount of pixels.",
+                params = listOf(ParamSpec("amount", Int::class, "Amount of pixels to swipe down.")),
                 build = { args -> ScrollDown(args["amount"] as Int) }
             ),
-            "scroll_up" to Spec(
-                name = "scroll_up",
-                description = "Scroll up by the specified amount of pixels.",
-                params = listOf(ParamSpec("amount", Int::class, "Amount of pixels to scroll up.")),
+            "long_press_element" to Spec(
+                name = "long_press_element",
+                description = "Press and hold the element with the specified numeric ID. Useful for context menus, selecting text, etc.",
+                params = listOf(ParamSpec("element_id", Int::class, "The numeric ID of the element to long press.")),
+                build = { args -> LongPressElement(args["element_id"] as Int) }
+            ),
+            "swipe_up" to Spec(
+                name = "swipe_up",
+                description = "swipe up by the specified amount of pixels.",
+                params = listOf(ParamSpec("amount", Int::class, "Amount of pixels to swipe up.")),
                 build = { args -> ScrollUp(args["amount"] as Int) }
             ),
             "search_google" to Spec(

@@ -88,6 +88,7 @@ class ConversationalAgentService : Service() {
     private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
     private val memoryManager by lazy { MemoryManager.getInstance(this) }
     private val usedMemories = mutableSetOf<String>() // Track memories already used in this conversation
+    private var hasHeardFirstUtterance = false // Track if we've received the first user utterance
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private val eyes by lazy { Eyes(this) }
     
@@ -121,6 +122,7 @@ class ConversationalAgentService : Service() {
         clarificationAttempts = 0 // Reset clarification attempts counter
         sttErrorAttempts = 0 // Reset STT error attempts counter
         usedMemories.clear() // Clear used memories for new conversation
+        hasHeardFirstUtterance = false // Reset first utterance flag
         visualFeedbackManager.showTtsWave()
         showInputBoxIfNeeded()
         visualFeedbackManager.showSpeakingOverlay() // <-- ADD THIS LINE
@@ -177,19 +179,17 @@ class ConversationalAgentService : Service() {
         firebaseAnalytics.logEvent("conversation_initiated", null)
         trackConversationStart()
 
+        // Skip greeting and start listening immediately
         serviceScope.launch {
-            if (conversationHistory.size == 1) {
-                val greeting = getPersonalizedGreeting()
-                conversationHistory = addResponse("model", greeting, conversationHistory)
-                trackMessage("model", greeting, "greeting")
-                speakAndThenListen(greeting)
-            }
+            Log.d("ConvAgent", "Starting immediate listening (no greeting)")
+            startImmediateListening()
         }
         return START_STICKY
     }
 
     /**
      * Gets a personalized greeting using the user's name from memories if available
+     * NOTE: This method is kept for potential future use but no longer called on startup
      */
     private fun getPersonalizedGreeting(): String {
         try {
@@ -202,10 +202,90 @@ class ConversationalAgentService : Service() {
         }
     }
 
+    /**
+     * Starts listening immediately without speaking any greeting or performing memory extraction
+     * Memory extraction will be deferred until after the first user utterance
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private suspend fun startImmediateListening() {
+        Log.d("ConvAgent", "Starting immediate listening without greeting")
+        
+        // Check if we are in text mode before starting to listen
+        if (isTextModeActive) {
+            Log.d("ConvAgent", "In text mode, ensuring input box is visible and skipping voice listening.")
+            mainHandler.post {
+                showInputBoxIfNeeded() // Re-show the input box for the next turn.
+            }
+            return // Skip starting the voice listener entirely.
+        }
+        
+        speechCoordinator.startListening(
+            onResult = { recognizedText ->
+                if (isTextModeActive) return@startListening // Ignore results in text mode
+                Log.d("ConvAgent", "Final user transcription: $recognizedText")
+                visualFeedbackManager.updateTranscription(recognizedText)
+                mainHandler.postDelayed({
+                    visualFeedbackManager.hideTranscription()
+                }, 500)
+                
+                // Mark that we've heard the first utterance and trigger memory extraction
+                if (!hasHeardFirstUtterance) {
+                    hasHeardFirstUtterance = true
+                    Log.d("ConvAgent", "First utterance received, triggering memory extraction")
+                    serviceScope.launch {
+                        updateSystemPromptWithMemories()
+                    }
+                }
+                
+                processUserInput(recognizedText)
+            },
+            onError = { error ->
+                Log.e("ConvAgent", "STT Error: $error")
+                if (isTextModeActive) return@startListening // Ignore errors in text mode
+                
+                // Track STT errors
+                val sttErrorBundle = android.os.Bundle().apply {
+                    putString("error_message", error.take(100))
+                    putInt("error_attempt", sttErrorAttempts + 1)
+                    putInt("max_attempts", maxSttErrorAttempts)
+                }
+                firebaseAnalytics.logEvent("stt_error", sttErrorBundle)
+                
+                visualFeedbackManager.hideTranscription()
+                sttErrorAttempts++
+                serviceScope.launch {
+                    if (sttErrorAttempts >= maxSttErrorAttempts) {
+                        firebaseAnalytics.logEvent("conversation_ended_stt_errors", null)
+                        val exitMessage = "I'm having trouble understanding you clearly. Please try calling later!"
+                        trackMessage("model", exitMessage, "error_message")
+                        gracefulShutdown(exitMessage, "stt_errors")
+                    } else {
+                        val retryMessage = "I'm sorry, I didn't catch that. Could you please repeat?"
+                        speakAndThenListen(retryMessage)
+                    }
+                }
+            },
+            onPartialResult = { partialText ->
+                if (isTextModeActive) return@startListening // Ignore partial results in text mode
+                visualFeedbackManager.updateTranscription(partialText)
+            },
+            onListeningStateChange = { listening ->
+                Log.d("ConvAgent", "Listening state: $listening")
+                if (listening) {
+                    if (isTextModeActive) return@startListening // Ignore state changes in text mode
+                    visualFeedbackManager.showTranscription()
+                }
+            }
+        )
+    }
+
 
     @RequiresApi(Build.VERSION_CODES.R)
     private suspend fun speakAndThenListen(text: String, draw: Boolean = true) {
-        updateSystemPromptWithMemories()
+        // Only update system prompt with memories if we've heard the first utterance
+        if (hasHeardFirstUtterance) {
+            updateSystemPromptWithMemories()
+        }
         ttsManager.setCaptionsEnabled(draw)
 
         speechCoordinator.speakText(text)
@@ -227,6 +307,16 @@ class ConversationalAgentService : Service() {
                 mainHandler.postDelayed({
                     visualFeedbackManager.hideTranscription()
                 }, 500)
+                
+                // Mark that we've heard the first utterance and trigger memory extraction if not already done
+                if (!hasHeardFirstUtterance) {
+                    hasHeardFirstUtterance = true
+                    Log.d("ConvAgent", "First utterance received, triggering memory extraction")
+                    serviceScope.launch {
+                        updateSystemPromptWithMemories()
+                    }
+                }
+                
                 processUserInput(recognizedText)
 
             },
@@ -337,6 +427,13 @@ class ConversationalAgentService : Service() {
         serviceScope.launch {
             removeClarificationQuestions()
             updateSystemPromptWithAgentStatus()
+            
+            // Mark that we've heard the first utterance and trigger memory extraction if not already done
+            if (!hasHeardFirstUtterance) {
+                hasHeardFirstUtterance = true
+                Log.d("ConvAgent", "First utterance received via processUserInput, triggering memory extraction")
+                updateSystemPromptWithMemories()
+            }
 
             conversationHistory = addResponse("user", userInput, conversationHistory)
             
@@ -447,7 +544,7 @@ class ConversationalAgentService : Service() {
                             // Track freemium limit reached
                             firebaseAnalytics.logEvent("task_rejected_freemium_limit", null)
                             
-                            val upgradeMessage = "${getPersonalizedGreeting()} You've used all your free tasks for the month. Please upgrade in the app to unlock more. We can still talk in voice mode."
+                            val upgradeMessage = "Hey! You've used all your free tasks for the month. Please upgrade in the app to unlock more. We can still talk in voice mode."
                             conversationHistory = addResponse("model", upgradeMessage, conversationHistory)
                             trackMessage("model", upgradeMessage, "freemium_limit")
                             speakAndThenListen(upgradeMessage)

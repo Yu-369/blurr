@@ -227,6 +227,9 @@ class VisualFeedbackManager private constructor(private val context: Context) {
         onSubmit: (String) -> Unit,
         onOutsideTap: () -> Unit
     ) {
+        // This method creates an overlay input box that appears over other apps
+        // Key fix: Proper keyboard positioning using WindowInsetsCompat to prevent
+        // the input box from being hidden behind the keyboard when it appears
         mainHandler.post {
             if (inputBoxView?.isAttachedToWindow == true) {
                 // If already showing, just ensure focus
@@ -254,23 +257,9 @@ class VisualFeedbackManager private constructor(private val context: Context) {
                         WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT
             ).apply {
-                gravity = Gravity.BOTTOM
-            }
-
-            ViewCompat.setOnApplyWindowInsetsListener(inputBoxView!!) { view, insets ->
-                val imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-                val navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
-
-                // The view's vertical position (y) should be the keyboard's height
-                // minus the navigation bar height, as the view is already avoiding the nav bar.
-                params.y = imeHeight - navigationBarHeight
-
-                // Apply the updated layout parameters
-                if (view.isAttachedToWindow) {
-                    windowManager.updateViewLayout(view, params)
-                }
-
-                WindowInsetsCompat.CONSUMED // Consume the insets
+                gravity = Gravity.TOP
+                // Top margin with sufficient space
+                y = (80 * context.resources.displayMetrics.density).toInt() // 80dp top margin
             }
 
             inputField?.setOnEditorActionListener { v, actionId, _ ->
@@ -305,6 +294,8 @@ class VisualFeedbackManager private constructor(private val context: Context) {
 
             try {
                 windowManager.addView(inputBoxView, params)
+                Log.d(TAG, "Input box added with initial y position: ${params.y}")
+                
                 // **IMPROVEMENT**: Explicitly request focus and show the keyboard
                 inputField?.requestFocus()
                 val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager

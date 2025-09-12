@@ -22,6 +22,19 @@ android {
     namespace = "com.blurr.voice"
     compileSdk = 35
 
+    // Common API keys and configuration - extracted to avoid duplication
+    val apiKeys = localProperties.getProperty("GEMINI_API_KEYS") ?: ""
+    val tavilyApiKeys = localProperties.getProperty("TAVILY_API") ?: ""
+    val mem0ApiKey = localProperties.getProperty("MEM0_API") ?: ""
+    val picovoiceApiKey = localProperties.getProperty("PICOVOICE_ACCESS_KEY") ?: ""
+    val googleTtsApiKey = localProperties.getProperty("GOOGLE_TTS_API_KEY") ?: ""
+    val googlecloudGatewayPicovoice = localProperties.getProperty("GCLOUD_GATEWAY_PICOVOICE_KEY") ?: ""
+    val googlecloudGatewayURL = localProperties.getProperty("GCLOUD_GATEWAY_URL") ?: ""
+    val googlecloudProxyURL = localProperties.getProperty("GCLOUD_PROXY_URL") ?: ""
+    val googlecloudProxyURLKey = localProperties.getProperty("GCLOUD_PROXY_URL_KEY") ?: ""
+    val revenueCatSDK = localProperties.getProperty("REVENUE_CAT_PUBLIC_URL") ?: ""
+    val debugSha1 = "D0:A1:49:03:FD:B5:37:DF:B5:36:51:B1:66:AE:70:11:E2:59:08:33"
+
     defaultConfig {
         applicationId = "com.blurr.voice"
         minSdk = 24
@@ -31,8 +44,21 @@ android {
                 ""
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Common build config fields - applies to all build types
+        buildConfigField("String", "GEMINI_API_KEYS", "\"$apiKeys\"")
+        buildConfigField("String", "TAVILY_API", "\"$tavilyApiKeys\"")
+        buildConfigField("String", "MEM0_API", "\"$mem0ApiKey\"")
+        buildConfigField("String", "PICOVOICE_ACCESS_KEY", "\"$picovoiceApiKey\"")
+        buildConfigField("boolean", "ENABLE_DIRECT_APP_OPENING", "true")
+        buildConfigField("boolean", "SPEAK_INSTRUCTIONS", "true")
+        buildConfigField("String", "GOOGLE_TTS_API_KEY", "\"$googleTtsApiKey\"")
+        buildConfigField("String", "GCLOUD_GATEWAY_PICOVOICE_KEY", "\"$googlecloudGatewayPicovoice\"")
+        buildConfigField("String", "GCLOUD_GATEWAY_URL", "\"$googlecloudGatewayURL\"")
+        buildConfigField("String", "GCLOUD_PROXY_URL", "\"$googlecloudProxyURL\"")
+        buildConfigField("String", "GCLOUD_PROXY_URL_KEY", "\"$googlecloudProxyURLKey\"")
+        buildConfigField("String", "REVENUE_CAT_PUBLIC_URL", "\"$revenueCatSDK\"")
     }
-    val debugSha1 = "D0:A1:49:03:FD:B5:37:DF:B5:36:51:B1:66:AE:70:11:E2:59:08:33"
 
     buildTypes {
         release {
@@ -44,70 +70,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Get the API keys string from the properties
-// Get the API keys string from the properties
-            val apiKeys = localProperties.getProperty("GEMINI_API_KEYS") ?: ""
-            val tavilyApiKeys = localProperties.getProperty("TAVILY_API") ?: ""
-
-            // This line CREATES the variable. Make sure it's here and not commented out.
-            buildConfigField("String", "GEMINI_API_KEYS", "\"$apiKeys\"")
-            buildConfigField("String", "TAVILY_API", "\"$tavilyApiKeys\"")
-            val mem0ApiKey = localProperties.getProperty("MEM0_API") ?: ""
-            buildConfigField("String", "MEM0_API", "\"$mem0ApiKey\"")
-            val picovoiceApiKey = localProperties.getProperty("PICOVOICE_ACCESS_KEY") ?: ""
-            buildConfigField("String", "PICOVOICE_ACCESS_KEY", "\"$picovoiceApiKey\"")
-            buildConfigField("boolean", "ENABLE_DIRECT_APP_OPENING", "true")
-            buildConfigField("boolean", "SPEAK_INSTRUCTIONS", "true")
-
-            val googleTtsApiKey = localProperties.getProperty("GOOGLE_TTS_API_KEY") ?: ""
-            buildConfigField("String", "GOOGLE_TTS_API_KEY", "\"$googleTtsApiKey\"")
-
-            val googlecloudGatewayPicovoice = localProperties.getProperty("GCLOUD_GATEWAY_PICOVOICE_KEY") ?: ""
-            buildConfigField("String", "GCLOUD_GATEWAY_PICOVOICE_KEY", "\"$googlecloudGatewayPicovoice\"")
-
-            val googlecloudGatewayURL = localProperties.getProperty("GCLOUD_GATEWAY_URL") ?: ""
-            buildConfigField("String", "GCLOUD_GATEWAY_URL", "\"$googlecloudGatewayURL\"")
-
-            val googlecloudProxyURL = localProperties.getProperty("GCLOUD_PROXY_URL") ?: ""
-            val googlecloudProxyURLKey = localProperties.getProperty("GCLOUD_PROXY_URL_KEY") ?: ""
-
-            // Add fields to BuildConfig for the proxy
-            buildConfigField("String", "GCLOUD_PROXY_URL", "\"$googlecloudProxyURL\"")
-            buildConfigField("String", "GCLOUD_PROXY_URL_KEY", "\"$googlecloudProxyURLKey\"")
-
         }
         debug {
-            // Also add it to the 'debug' block so it works when you run from Android Studio
-            val apiKeys = localProperties.getProperty("GEMINI_API_KEYS") ?: ""
-            val tavilyApiKeys = localProperties.getProperty("TAVILY_API") ?: ""
-            // This line must ALSO be here.
-            buildConfigField("String", "TAVILY_API", "\"$tavilyApiKeys\"")
-            buildConfigField("String", "GEMINI_API_KEYS", "\"$apiKeys\"")
-            val mem0ApiKey = localProperties.getProperty("MEM0_API") ?: ""
-            buildConfigField("String", "MEM0_API", "\"$mem0ApiKey\"")
-            val picovoiceApiKey = localProperties.getProperty("PICOVOICE_ACCESS_KEY") ?: ""
-            buildConfigField("String", "PICOVOICE_ACCESS_KEY", "\"$picovoiceApiKey\"")
-
-            // Debug flag for direct app opening (set to true for debugging, false for production)
-            buildConfigField("boolean", "ENABLE_DIRECT_APP_OPENING", "true")
-            buildConfigField("boolean", "SPEAK_INSTRUCTIONS", "true")
-            val googleTtsApiKey = localProperties.getProperty("GOOGLE_TTS_API_KEY") ?: ""
-            buildConfigField("String", "GOOGLE_TTS_API_KEY", "\"$googleTtsApiKey\"")
+            // Debug-specific field only
             buildConfigField("String", "SHA1_FINGERPRINT", "\"$debugSha1\"")
-
-            val googlecloudGatewayPicovoice = localProperties.getProperty("GCLOUD_GATEWAY_PICOVOICE_KEY") ?: ""
-            buildConfigField("String", "GCLOUD_GATEWAY_PICOVOICE_KEY", "\"$googlecloudGatewayPicovoice\"")
-
-            val googlecloudGatewayURL = localProperties.getProperty("GCLOUD_GATEWAY_URL") ?: ""
-            buildConfigField("String", "GCLOUD_GATEWAY_URL", "\"$googlecloudGatewayURL\"")
-            // Get properties from local.properties
-            val googlecloudProxyURL = localProperties.getProperty("GCLOUD_PROXY_URL") ?: ""
-            val googlecloudProxyURLKey = localProperties.getProperty("GCLOUD_PROXY_URL_KEY") ?: ""
-
-            // Add fields to BuildConfig for the proxy
-            buildConfigField("String", "GCLOUD_PROXY_URL", "\"$googlecloudProxyURL\"")
-            buildConfigField("String", "GCLOUD_PROXY_URL_KEY", "\"$googlecloudProxyURLKey\"")
-
         }
     }
     compileOptions {

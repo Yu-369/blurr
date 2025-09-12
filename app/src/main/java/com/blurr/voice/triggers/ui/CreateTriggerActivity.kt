@@ -1,5 +1,16 @@
 package com.blurr.voice.triggers.ui
 
+import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TimePicker
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.blurr.voice.R
+import com.blurr.voice.triggers.Trigger
+import com.blurr.voice.triggers.TriggerManager
+import com.blurr.voice.triggers.TriggerType
+
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
@@ -39,6 +50,10 @@ class CreateTriggerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_trigger)
 
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         triggerManager = TriggerManager.getInstance(this)
         instructionEditText = findViewById(R.id.instructionEditText)
         triggerTypeRadioGroup = findViewById(R.id.triggerTypeRadioGroup)
@@ -55,6 +70,11 @@ class CreateTriggerActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             saveTrigger()
         }
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
     }
 
     private fun setupRadioGroup() {

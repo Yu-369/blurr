@@ -1,6 +1,9 @@
 package com.blurr.voice.triggers.ui
 
-
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
@@ -21,10 +24,20 @@ class TriggersActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_triggers)
 
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+
         triggerManager = TriggerManager.getInstance(this)
 
         setupRecyclerView()
         setupFab()
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
     }
 
     override fun onResume() {
@@ -54,11 +67,29 @@ class TriggersActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.triggersRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        triggerAdapter = TriggerAdapter(mutableListOf()) { trigger, isEnabled ->
-            trigger.isEnabled = isEnabled
-            triggerManager.updateTrigger(trigger)
-        }
+        triggerAdapter = TriggerAdapter(
+            mutableListOf(),
+            onCheckedChange = { trigger, isEnabled ->
+                trigger.isEnabled = isEnabled
+                triggerManager.updateTrigger(trigger)
+            },
+            onDeleteClick = { trigger ->
+                showDeleteConfirmationDialog(trigger)
+            }
+        )
         recyclerView.adapter = triggerAdapter
+    }
+
+    private fun showDeleteConfirmationDialog(trigger: com.blurr.voice.triggers.Trigger) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Delete Trigger")
+            .setMessage("Are you sure you want to delete this trigger?")
+            .setPositiveButton("Delete") { _, _ ->
+                triggerManager.removeTrigger(trigger)
+                loadTriggers() // Refresh the list
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun setupFab() {

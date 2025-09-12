@@ -176,6 +176,4 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics-ndk")
     implementation(libs.firebase.firestore)
 
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-
 }

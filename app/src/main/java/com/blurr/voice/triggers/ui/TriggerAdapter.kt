@@ -9,12 +9,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.blurr.voice.R
 import com.blurr.voice.triggers.Trigger
 import java.util.Locale
-import com.blurr.voice.triggers.TriggerType
-
 
 class TriggerAdapter(
     private val triggers: MutableList<Trigger>,
-    private val onCheckedChange: (Trigger, Boolean) -> Unit
+    private val onCheckedChange: (Trigger, Boolean) -> Unit,
+    private val onDeleteClick: (Trigger) -> Unit
 ) : RecyclerView.Adapter<TriggerAdapter.TriggerViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TriggerViewHolder {
@@ -39,9 +38,14 @@ class TriggerAdapter(
         private val instructionTextView: TextView = itemView.findViewById(R.id.triggerInstructionTextView)
         private val timeTextView: TextView = itemView.findViewById(R.id.triggerTimeTextView)
         private val enabledSwitch: SwitchCompat = itemView.findViewById(R.id.triggerEnabledSwitch)
+        private val deleteButton: android.widget.ImageButton = itemView.findViewById(R.id.deleteTriggerButton)
 
         fun bind(trigger: Trigger) {
             instructionTextView.text = trigger.instruction
+
+            deleteButton.setOnClickListener {
+                onDeleteClick(trigger)
+            }
 
             when (trigger.type) {
                 TriggerType.SCHEDULED_TIME -> {

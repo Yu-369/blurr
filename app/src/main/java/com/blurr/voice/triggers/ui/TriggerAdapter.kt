@@ -9,6 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.blurr.voice.R
 import com.blurr.voice.triggers.Trigger
 import java.util.Locale
+import com.blurr.voice.triggers.TriggerType
+
 
 class TriggerAdapter(
     private val triggers: MutableList<Trigger>,

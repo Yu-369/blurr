@@ -86,23 +86,17 @@ class TriggerManager(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = System.currentTimeMillis()
-            set(Calendar.HOUR_OF_DAY, trigger.hour!!)
-            set(Calendar.MINUTE, trigger.minute!!)
-            set(Calendar.SECOND, 0)
-        }
-
-        // If the trigger time today has already passed, schedule it for tomorrow
-        if (calendar.timeInMillis <= System.currentTimeMillis()) {
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
+        val nextTriggerTime = getNextTriggerTime(trigger.hour!!, trigger.minute!!, trigger.daysOfWeek)
+        if (nextTriggerTime == null) {
+            android.util.Log.w("TriggerManager", "No valid day of week for trigger: ${trigger.id}")
+            return
         }
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             if (alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
+                    nextTriggerTime.timeInMillis,
                     pendingIntent
                 )
             } else {
@@ -113,10 +107,33 @@ class TriggerManager(private val context: Context) {
         } else {
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
+                nextTriggerTime.timeInMillis,
                 pendingIntent
             )
         }
+    }
+
+    private fun getNextTriggerTime(hour: Int, minute: Int, daysOfWeek: Set<Int>): Calendar? {
+        val now = Calendar.getInstance()
+        var nextTrigger = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        for (i in 0..7) {
+            val day = (now.get(Calendar.DAY_OF_WEEK) + i - 1) % 7 + 1
+            if (day in daysOfWeek) {
+                nextTrigger.add(Calendar.DAY_OF_YEAR, i)
+                if (nextTrigger.after(now)) {
+                    return nextTrigger
+                }
+                // Reset for next iteration
+                nextTrigger.add(Calendar.DAY_OF_YEAR, -i)
+            }
+        }
+        return null // Should not happen if at least one day is selected
     }
 
     private fun cancelAlarm(trigger: Trigger) {

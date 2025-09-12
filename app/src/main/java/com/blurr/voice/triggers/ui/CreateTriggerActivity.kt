@@ -1,5 +1,15 @@
 package com.blurr.voice.triggers.ui
 
+import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TimePicker
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.blurr.voice.R
+import com.blurr.voice.triggers.Trigger
+import com.blurr.voice.triggers.TriggerManager
+import com.blurr.voice.triggers.TriggerType
 
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -26,11 +36,11 @@ class CreateTriggerActivity : AppCompatActivity() {
 
     private lateinit var triggerManager: TriggerManager
     private lateinit var instructionEditText: EditText
-    private lateinit var triggerTypeRadioGroup: RadioGroup
     private lateinit var scheduledTimeOptions: LinearLayout
     private lateinit var notificationOptions: LinearLayout
     private lateinit var timePicker: TimePicker
     private lateinit var appsRecyclerView: RecyclerView
+    private lateinit var dayOfWeekChipGroup: com.google.android.material.chip.ChipGroup
     private lateinit var appAdapter: AppAdapter
 
     private var selectedTriggerType = TriggerType.SCHEDULED_TIME
@@ -46,13 +56,20 @@ class CreateTriggerActivity : AppCompatActivity() {
 
         triggerManager = TriggerManager.getInstance(this)
         instructionEditText = findViewById(R.id.instructionEditText)
-        triggerTypeRadioGroup = findViewById(R.id.triggerTypeRadioGroup)
         scheduledTimeOptions = findViewById(R.id.scheduledTimeOptions)
         notificationOptions = findViewById(R.id.notificationOptions)
         timePicker = findViewById(R.id.timePicker)
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
+        dayOfWeekChipGroup = findViewById(R.id.dayOfWeekChipGroup)
 
-        setupRadioGroup()
+        // Set default checked state for all day chips
+        for (i in 0 until dayOfWeekChipGroup.childCount) {
+            (dayOfWeekChipGroup.getChildAt(i) as com.google.android.material.chip.Chip).isChecked = true
+        }
+
+        selectedTriggerType = intent.getSerializableExtra("EXTRA_TRIGGER_TYPE") as TriggerType
+        setupInitialView()
+
         setupRecyclerView()
         loadApps()
 
@@ -67,19 +84,15 @@ class CreateTriggerActivity : AppCompatActivity() {
         return true
     }
 
-    private fun setupRadioGroup() {
-        triggerTypeRadioGroup.setOnCheckedChangeListener { _, checkedId ->
-            when (checkedId) {
-                R.id.scheduledTimeRadioButton -> {
-                    selectedTriggerType = TriggerType.SCHEDULED_TIME
-                    scheduledTimeOptions.visibility = View.VISIBLE
-                    notificationOptions.visibility = View.GONE
-                }
-                R.id.notificationRadioButton -> {
-                    selectedTriggerType = TriggerType.NOTIFICATION
-                    scheduledTimeOptions.visibility = View.GONE
-                    notificationOptions.visibility = View.VISIBLE
-                }
+    private fun setupInitialView() {
+        when (selectedTriggerType) {
+            TriggerType.SCHEDULED_TIME -> {
+                scheduledTimeOptions.visibility = View.VISIBLE
+                notificationOptions.visibility = View.GONE
+            }
+            TriggerType.NOTIFICATION -> {
+                scheduledTimeOptions.visibility = View.GONE
+                notificationOptions.visibility = View.VISIBLE
             }
         }
     }
@@ -128,11 +141,17 @@ class CreateTriggerActivity : AppCompatActivity() {
                     showExactAlarmPermissionDialog()
                     return
                 }
+                val selectedDays = getSelectedDays()
+                if (selectedDays.isEmpty()) {
+                    Toast.makeText(this, "Please select at least one day", Toast.LENGTH_SHORT).show()
+                    return
+                }
                 Trigger(
                     type = TriggerType.SCHEDULED_TIME,
                     hour = timePicker.hour,
                     minute = timePicker.minute,
-                    instruction = instruction
+                    instruction = instruction,
+                    daysOfWeek = selectedDays
                 )
             }
             TriggerType.NOTIFICATION -> {
@@ -154,8 +173,20 @@ class CreateTriggerActivity : AppCompatActivity() {
         finish()
     }
 
+    private fun getSelectedDays(): Set<Int> {
+        val selectedDays = mutableSetOf<Int>()
+        for (i in 0 until dayOfWeekChipGroup.childCount) {
+            val chip = dayOfWeekChipGroup.getChildAt(i) as com.google.android.material.chip.Chip
+            if (chip.isChecked) {
+                // Mapping index to Calendar.DAY_OF_WEEK constants (Sunday=1, Monday=2, etc.)
+                selectedDays.add(i + 1)
+            }
+        }
+        return selectedDays
+    }
+
     private fun showExactAlarmPermissionDialog() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Permission Required")
             .setMessage("To schedule tasks at a precise time, Panda needs the 'Alarms & Reminders' permission. Please grant this in the next screen.")
             .setPositiveButton("Grant Permission") { _, _ ->
@@ -165,5 +196,7 @@ class CreateTriggerActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.white))
     }
 }

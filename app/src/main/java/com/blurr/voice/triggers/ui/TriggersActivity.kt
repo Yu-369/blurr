@@ -2,6 +2,10 @@ package com.blurr.voice.triggers.ui
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import android.content.Intent
+import android.os.Bundle
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -50,7 +54,7 @@ class TriggersActivity : AppCompatActivity() {
     }
 
     private fun showPermissionDialog() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Permission Required")
             .setMessage("To use notification-based triggers, you need to grant Panda the Notification Listener permission in your system settings.")
             .setPositiveButton("Grant Permission") { _, _ ->
@@ -58,6 +62,8 @@ class TriggersActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.white))
     }
 
     private fun setupRecyclerView() {
@@ -77,7 +83,7 @@ class TriggersActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmationDialog(trigger: com.blurr.voice.triggers.Trigger) {
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Delete Trigger")
             .setMessage("Are you sure you want to delete this trigger?")
             .setPositiveButton("Delete") { _, _ ->
@@ -86,12 +92,14 @@ class TriggersActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(R.color.white))
     }
 
     private fun setupFab() {
         val fab = findViewById<FloatingActionButton>(R.id.addTriggerFab)
         fab.setOnClickListener {
-            startActivity(Intent(this, CreateTriggerActivity::class.java))
+            startActivity(Intent(this, ChooseTriggerTypeActivity::class.java))
         }
     }
 

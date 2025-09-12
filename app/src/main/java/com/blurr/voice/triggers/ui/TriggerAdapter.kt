@@ -8,7 +8,6 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.blurr.voice.R
 import com.blurr.voice.triggers.Trigger
-import com.blurr.voice.triggers.TriggerType
 import java.util.Locale
 
 class TriggerAdapter(

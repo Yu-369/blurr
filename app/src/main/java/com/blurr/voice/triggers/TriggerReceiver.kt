@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.blurr.voice.v2.AgentService
-import kotlinx.coroutines.launch
 
 class TriggerReceiver : BroadcastReceiver() {
 

@@ -67,6 +67,11 @@ data class ModelDecision(
 
 class ConversationalAgentService : Service() {
 
+    // Memory feature flag - temporarily disabled
+    companion object {
+        const val MEMORY_ENABLED = false
+    }
+
     private val speechCoordinator by lazy { SpeechCoordinator.getInstance(this) }
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var conversationHistory = listOf<Pair<String, List<Any>>>()
@@ -679,6 +684,21 @@ class ConversationalAgentService : Service() {
 
 
     private fun initializeConversation() {
+        val memoryContextSection = if (MEMORY_ENABLED) {
+            """
+            Use these memories to answer the user's question with his personal data
+            ### Memory Context Start ###
+            {memory_context}
+            ### Memory Context Ends ###
+            """
+        } else {
+            """
+            ### Memory Status ###
+            Memory system is temporarily disabled. Panda cannot remember or learn from previous conversations at this time.
+            ### End Memory Status ###
+            """
+        }
+        
         val systemPrompt = """
             You are a helpful voice assistant called Panda that can either have a conversation or ask executor to execute tasks on the user's phone.
             The executor can speak, listen, see screen, tap screen, and basically use the phone as normal human would
@@ -695,10 +715,7 @@ class ConversationalAgentService : Service() {
             3. Use the current screen context to better understand what the user is looking at and provide more relevant responses.
             4. If the user asks about something on the screen, you can reference the screen content directly.
 
-            Use these memories to answer the user's question with his personal data
-            ### Memory Context Start ###
-            {memory_context}
-            ### Memory Context Ends ###
+            $memoryContextSection
         
             Analyze the user's request and respond in the following format:
 
@@ -796,11 +813,6 @@ class ConversationalAgentService : Service() {
             val screenContext = getScreenContext()
             Log.d("ConvAgent", "Retrieved screen context: ${screenContext.take(200)}...")
             
-            // Get the last user message to search for relevant memories
-            val lastUserMessage = conversationHistory.lastOrNull { it.first == "user" }
-                ?.second?.filterIsInstance<TextPart>()
-                ?.joinToString(" ") { it.text } ?: ""
-
             // Get current prompt
             val currentPrompt = conversationHistory.first().second
                 .filterIsInstance<TextPart>()
@@ -809,49 +821,61 @@ class ConversationalAgentService : Service() {
             // Update screen context first
             var updatedPrompt = currentPrompt.replace("{screen_context}", screenContext)
 
-            if (lastUserMessage.isNotEmpty()) {
-                Log.d("ConvAgent", "Searching for memories relevant to: ${lastUserMessage.take(100)}...")
+            // Check if memory is enabled before processing memories
+            if (!MEMORY_ENABLED) {
+                Log.d("ConvAgent", "Memory is disabled, skipping memory operations")
+                // Replace memory context with disabled message
+                updatedPrompt = updatedPrompt.replace("{memory_context}", "Memory system is temporarily disabled")
+            } else {
+                // Get the last user message to search for relevant memories
+                val lastUserMessage = conversationHistory.lastOrNull { it.first == "user" }
+                    ?.second?.filterIsInstance<TextPart>()
+                    ?.joinToString(" ") { it.text } ?: ""
 
-                var relevantMemories = memoryManager.searchMemories(lastUserMessage, topK = 5).toMutableList() // Get more memories to filter from
-                val nameMemories = memoryManager.searchMemories("name", topK = 2)
-                relevantMemories.addAll(nameMemories)
-                if (relevantMemories.isNotEmpty()) {
-                    Log.d("ConvAgent", "Found ${relevantMemories.size} relevant memories")
+                if (lastUserMessage.isNotEmpty()) {
+                    Log.d("ConvAgent", "Searching for memories relevant to: ${lastUserMessage.take(100)}...")
 
-                    // Filter out memories that have already been used in this conversation
-                    val newMemories = relevantMemories.filter { memory ->
-                        !usedMemories.contains(memory)
-                    }.take(20) // Limit to top 20 new memories
+                    var relevantMemories = memoryManager.searchMemories(lastUserMessage, topK = 5).toMutableList() // Get more memories to filter from
+                    val nameMemories = memoryManager.searchMemories("name", topK = 2)
+                    relevantMemories.addAll(nameMemories)
+                    if (relevantMemories.isNotEmpty()) {
+                        Log.d("ConvAgent", "Found ${relevantMemories.size} relevant memories")
 
-                    if (newMemories.isNotEmpty()) {
-                        Log.d("ConvAgent", "Adding ${newMemories.size} new memories to context")
+                        // Filter out memories that have already been used in this conversation
+                        val newMemories = relevantMemories.filter { memory ->
+                            !usedMemories.contains(memory)
+                        }.take(20) // Limit to top 20 new memories
 
-                        // Add new memories to the used set
-                        newMemories.forEach { usedMemories.add(it) }
+                        if (newMemories.isNotEmpty()) {
+                            Log.d("ConvAgent", "Adding ${newMemories.size} new memories to context")
 
-                        val currentMemoryContext = extractCurrentMemoryContext(updatedPrompt)
-                        val allMemories = (currentMemoryContext + newMemories).distinct()
+                            // Add new memories to the used set
+                            newMemories.forEach { usedMemories.add(it) }
 
-                        // Update the system prompt with all memories
-                        val memoryContext = allMemories.joinToString("\n") { "- $it" }
-                        updatedPrompt = updatedPrompt.replace("{memory_context}", memoryContext)
+                            val currentMemoryContext = extractCurrentMemoryContext(updatedPrompt)
+                            val allMemories = (currentMemoryContext + newMemories).distinct()
 
-                        Log.d("ConvAgent", "Updated system prompt with ${allMemories.size} total memories (${newMemories.size} new)")
+                            // Update the system prompt with all memories
+                            val memoryContext = allMemories.joinToString("\n") { "- $it" }
+                            updatedPrompt = updatedPrompt.replace("{memory_context}", memoryContext)
+
+                            Log.d("ConvAgent", "Updated system prompt with ${allMemories.size} total memories (${newMemories.size} new)")
+                        } else {
+                            Log.d("ConvAgent", "No new memories to add (all relevant memories already used)")
+                            // Still need to replace the placeholder if no new memories
+                            val currentMemoryContext = extractCurrentMemoryContext(updatedPrompt)
+                            val memoryContext = currentMemoryContext.joinToString("\n") { "- $it" }
+                            updatedPrompt = updatedPrompt.replace("{memory_context}", memoryContext)
+                        }
                     } else {
-                        Log.d("ConvAgent", "No new memories to add (all relevant memories already used)")
-                        // Still need to replace the placeholder if no new memories
-                        val currentMemoryContext = extractCurrentMemoryContext(updatedPrompt)
-                        val memoryContext = currentMemoryContext.joinToString("\n") { "- $it" }
-                        updatedPrompt = updatedPrompt.replace("{memory_context}", memoryContext)
+                        Log.d("ConvAgent", "No relevant memories found")
+                        // Replace with empty context if no memories found
+                        updatedPrompt = updatedPrompt.replace("{memory_context}", "No relevant memories found")
                     }
                 } else {
-                    Log.d("ConvAgent", "No relevant memories found")
-                    // Replace with empty context if no memories found
-                    updatedPrompt = updatedPrompt.replace("{memory_context}", "No relevant memories found")
+                    // Replace with empty context if no user message
+                    updatedPrompt = updatedPrompt.replace("{memory_context}", "")
                 }
-            } else {
-                // Replace with empty context if no user message
-                updatedPrompt = updatedPrompt.replace("{memory_context}", "")
             }
 
             if (updatedPrompt.isNotEmpty()) {
@@ -1072,9 +1096,11 @@ class ConversationalAgentService : Service() {
                 delay(2000) // Give TTS time to finish
             }
             // 1. Extract memories from the conversation before ending
-            if (conversationHistory.size > 1) {
+            if (conversationHistory.size > 1 && MEMORY_ENABLED) {
                 Log.d("ConvAgent", "Extracting memories before shutdown.")
                 MemoryExtractor.extractAndStoreMemories(conversationHistory, memoryManager, usedMemories)
+            } else if (!MEMORY_ENABLED) {
+                Log.d("ConvAgent", "Memory disabled, skipping memory extraction.")
             }
             // 3. Stop the service
             stopSelf()
@@ -1108,9 +1134,11 @@ class ConversationalAgentService : Service() {
 
         removeClarificationQuestions()
         // Make a thread-safe copy of the conversation history.
-        if (conversationHistory.size > 1) {
+        if (conversationHistory.size > 1 && MEMORY_ENABLED) {
             Log.d("ConvAgent", "Extracting memories before shutdown.")
             MemoryExtractor.extractAndStoreMemories(conversationHistory, memoryManager, usedMemories)
+        } else if (!MEMORY_ENABLED) {
+            Log.d("ConvAgent", "Memory disabled, skipping memory extraction.")
         }
         serviceScope.cancel("User tapped outside, forcing instant shutdown.")
 

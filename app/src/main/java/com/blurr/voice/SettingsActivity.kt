@@ -40,7 +40,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var editUserName: android.widget.EditText
     private lateinit var editUserEmail: android.widget.EditText
     private lateinit var editWakeWordKey: android.widget.EditText
-    private lateinit var buttonSaveWakeWordKey: Button
     private lateinit var textGetPicovoiceKeyLink: TextView // NEW: Declare the TextView for the link
     private lateinit var wakeWordButton: TextView // NEW: Declare wake word button
     private lateinit var wakeWordManager: WakeWordManager // NEW: Wake word manager
@@ -103,7 +102,6 @@ class SettingsActivity : AppCompatActivity() {
         permissionsInfoButton = findViewById(R.id.permissionsInfoButton)
       
         editWakeWordKey = findViewById(R.id.editWakeWordKey)
-        buttonSaveWakeWordKey = findViewById(R.id.buttonSaveWakeWordKey)
         wakeWordButton = findViewById(R.id.wakeWordButton) // NEW: Initialize wake word button
 
         editUserName = findViewById(R.id.editUserName)
@@ -136,19 +134,17 @@ class SettingsActivity : AppCompatActivity() {
             val intent = Intent(this, PermissionsActivity::class.java)
             startActivity(intent)
         }
-        buttonSaveWakeWordKey.setOnClickListener {
-            val userKey = editWakeWordKey.text.toString().trim()
-            if (userKey.isEmpty()) {
-                showPicovoiceKeyRequiredDialog()
-                return@setOnClickListener
-            }
-            val keyManager = PicovoiceKeyManager(this)
-            keyManager.saveUserProvidedKey(userKey)
-            Toast.makeText(this, "Wake word key saved.", Toast.LENGTH_SHORT).show()
-        }
-        
         wakeWordButton.setOnClickListener {
             val keyManager = PicovoiceKeyManager(this)
+            
+            // Step 1: Save key if provided in the EditText
+            val userKey = editWakeWordKey.text.toString().trim()
+            if (userKey.isNotEmpty()) {
+                keyManager.saveUserProvidedKey(userKey)
+                Toast.makeText(this, "Wake word key saved.", Toast.LENGTH_SHORT).show()
+            }
+            
+            // Step 2: Check if we have a key (either just saved or previously saved)
             val hasKey = !keyManager.getUserProvidedKey().isNullOrBlank()
             
             if (!hasKey) {
@@ -156,6 +152,7 @@ class SettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
+            // Step 3: Enable the wake word
             wakeWordManager.handleWakeWordButtonClick(wakeWordButton)
             // Give the service a moment to update its state before refreshing the UI
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ updateWakeWordButtonState() }, 500)

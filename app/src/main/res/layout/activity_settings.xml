@@ -182,15 +182,7 @@
                 android:textColor="#CECECE"
                 android:textColorHint="#888888" />
 
-            <Button
-                android:id="@+id/buttonSaveWakeWordKey"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/btn_with_border"
-                android:text="Save Key"
-                android:textColor="@android:color/white" />
+
 
             <TextView
                 android:id="@+id/wakeWordButton"

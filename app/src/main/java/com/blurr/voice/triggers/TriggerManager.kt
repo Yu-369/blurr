@@ -68,6 +68,11 @@ class TriggerManager(private val context: Context) {
     }
 
     private fun scheduleAlarm(trigger: Trigger) {
+        if (trigger.type != TriggerType.SCHEDULED_TIME) {
+            android.util.Log.w("TriggerManager", "Attempted to schedule alarm for non-time-based trigger: ${trigger.id}")
+            return
+        }
+
         val intent = Intent(context, TriggerReceiver::class.java).apply {
             action = TriggerReceiver.ACTION_EXECUTE_TASK
             putExtra(TriggerReceiver.EXTRA_TASK_INSTRUCTION, trigger.instruction)
@@ -115,6 +120,9 @@ class TriggerManager(private val context: Context) {
     }
 
     private fun cancelAlarm(trigger: Trigger) {
+        if (trigger.type != TriggerType.SCHEDULED_TIME) {
+            return // No alarm to cancel for non-time-based triggers
+        }
         val intent = Intent(context, TriggerReceiver::class.java).apply {
             action = TriggerReceiver.ACTION_EXECUTE_TASK
         }

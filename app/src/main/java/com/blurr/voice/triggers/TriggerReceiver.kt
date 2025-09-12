@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.blurr.voice.v2.AgentService
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.launch
 
 class TriggerReceiver : BroadcastReceiver() {
 
@@ -17,7 +15,6 @@ class TriggerReceiver : BroadcastReceiver() {
         private const val TAG = "TriggerReceiver"
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     override fun onReceive(context: Context?, intent: Intent?) {
         if (context == null || intent == null) {
             Log.w(TAG, "Received null context or intent, cannot proceed.")

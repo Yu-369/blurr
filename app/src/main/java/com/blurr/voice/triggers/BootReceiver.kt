@@ -20,12 +20,13 @@ class BootReceiver : BroadcastReceiver() {
             // It's good practice to do this work off the main thread
             CoroutineScope(Dispatchers.IO).launch {
                 val triggers = triggerManager.getTriggers()
-                triggers.filter { it.isEnabled }.forEach { trigger ->
+                val scheduledTriggers = triggers.filter { it.isEnabled && it.type == TriggerType.SCHEDULED_TIME }
+                scheduledTriggers.forEach { trigger ->
                     // In the future, we might have different logic for rescheduling
                     // but for now, just calling schedule is fine as it will recreate the alarm.
                     triggerManager.updateTrigger(trigger)
                 }
-                Log.d(TAG, "Finished rescheduling ${triggers.count { it.isEnabled }} alarms.")
+                Log.d(TAG, "Finished rescheduling ${scheduledTriggers.size} alarms.")
             }
         }
     }

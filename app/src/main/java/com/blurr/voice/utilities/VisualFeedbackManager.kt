@@ -227,6 +227,9 @@ class VisualFeedbackManager private constructor(private val context: Context) {
         onSubmit: (String) -> Unit,
         onOutsideTap: () -> Unit
     ) {
+        // This method creates an overlay input box that appears over other apps
+        // Key fix: Proper keyboard positioning using WindowInsetsCompat to prevent
+        // the input box from being hidden behind the keyboard when it appears
         mainHandler.post {
             if (inputBoxView?.isAttachedToWindow == true) {
                 // If already showing, just ensure focus
@@ -325,6 +328,8 @@ class VisualFeedbackManager private constructor(private val context: Context) {
 
             try {
                 windowManager.addView(inputBoxView, params)
+                Log.d(TAG, "Input box added with initial y position: ${params.y}")
+                
                 // **IMPROVEMENT**: Explicitly request focus and show the keyboard
                 inputField?.requestFocus()
                 val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager

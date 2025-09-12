@@ -6,12 +6,21 @@ Always reference these instructions first and fallback to search or bash command
 
 ## Working Effectively
 
+### Version Management
+- **Android Gradle Plugin (AGP)**: Version 8.9.2 is specified in `gradle/libs.versions.toml`
+- **CRITICAL**: AGP version must remain 8.9.2 - this is the latest stable version
+- **NEVER** change AGP version to 8.5.2 - this is an older, outdated version
+- **NEVER** downgrade AGP version without explicit project requirements
+- **ALWAYS** verify version compatibility before making changes to dependency versions
+- Current AGP 8.9.2 is the latest stable version and should remain unchanged
+
 ### Prerequisites and Environment Setup
 - **CRITICAL**: This project requires Android Studio (latest version) or Android command-line tools
 - **CRITICAL**: Android SDK must be installed and accessible at `/usr/local/lib/android/sdk` or equivalent
 - **CRITICAL**: Only builds on systems with proper Android development environment - will NOT build in basic Linux CI environments
 - Target Android API 35, minimum SDK 24
 - Requires JDK 11+ (OpenJDK 17 recommended)
+- **CRITICAL**: Android Gradle Plugin (AGP) version is 8.9.2 (defined in `gradle/libs.versions.toml`) - DO NOT change this to 8.5.2 or downgrade to any older version
 
 ### Initial Setup Commands
 1. **Install Android Studio or Android Command Line Tools**
@@ -128,6 +137,12 @@ Check `/docs` directory for detailed feature documentation:
 
 ## Common Issues and Solutions
 
+### Copilot Guidelines - DO NOT IGNORE
+- **NEVER suggest changing AGP version from 8.9.2 to 8.5.2** - 8.5.2 is outdated
+- **NEVER downgrade Android Gradle Plugin** without explicit requirements
+- **ALWAYS maintain current dependency versions** unless security updates are needed
+- **VERIFY compatibility** before suggesting version changes
+
 ### Build Failures
 - **"Plugin not found" errors**: Ensure Android SDK is properly installed and gradle can access Google Maven
 - **"API key missing" errors**: Verify all required keys are in `local.properties`
@@ -212,4 +227,4 @@ adb logcat | grep GeminiApi
 - Tests: `app/src/test/java/com/blurr/voice/`
 - Resources: `app/src/main/res/`
 - Build config: `app/build.gradle.kts`
-- Dependencies: `gradle/libs.versions.toml`
+- Dependencies: `gradle/libs.versions.toml` (AGP version 8.9.2 - NEVER change to 8.5.2)

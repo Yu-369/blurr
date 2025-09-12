@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".MyApplication"
@@ -70,6 +71,9 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".triggers.ui.TriggersActivity" android:exported="false" android:label="Triggers" android:theme="@style/Theme.Blurr" />
+        <activity android:name=".triggers.ui.CreateTriggerActivity" android:exported="false" android:label="Create Trigger" android:theme="@style/Theme.Blurr" />
+
 
         <!-- Your Other Services -->
         <service
@@ -126,6 +130,26 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/panda_widget_info" />
+        </receiver>
+
+        <!-- Central receiver for all app triggers -->
+        <receiver
+            android:name=".triggers.TriggerReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.blurr.voice.action.EXECUTE_TASK" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Receiver to reschedule alarms on device reboot -->
+        <receiver
+            android:name=".triggers.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
         </receiver>
 
     </application>

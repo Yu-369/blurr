@@ -11,6 +11,7 @@ class TriggerReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_EXECUTE_TASK = "com.blurr.voice.action.EXECUTE_TASK"
         const val EXTRA_TASK_INSTRUCTION = "com.blurr.voice.EXTRA_TASK_INSTRUCTION"
+        const val EXTRA_TRIGGER_ID = "com.blurr.voice.EXTRA_TRIGGER_ID"
         private const val TAG = "TriggerReceiver"
     }
 
@@ -32,6 +33,14 @@ class TriggerReceiver : BroadcastReceiver() {
 
             // Directly start the v2 AgentService
             AgentService.start(context, taskInstruction)
+
+            // Reschedule the alarm for the next day
+            val triggerId = intent.getStringExtra(EXTRA_TRIGGER_ID)
+            if (triggerId != null) {
+                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    TriggerManager.getInstance(context).rescheduleTrigger(triggerId)
+                }
+            }
         }
     }
 }

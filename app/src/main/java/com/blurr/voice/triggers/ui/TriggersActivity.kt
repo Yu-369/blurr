@@ -4,9 +4,15 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import android.content.Intent
+import android.os.Bundle
+import android.provider.Settings
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.blurr.voice.R
 import com.blurr.voice.triggers.TriggerManager
+import com.blurr.voice.triggers.TriggerType
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class TriggersActivity : AppCompatActivity() {
@@ -27,6 +33,25 @@ class TriggersActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadTriggers()
+        checkNotificationPermission()
+    }
+
+    private fun checkNotificationPermission() {
+        val hasNotificationTriggers = triggerManager.getTriggers().any { it.type == TriggerType.NOTIFICATION && it.isEnabled }
+        if (hasNotificationTriggers && !com.blurr.voice.triggers.PermissionUtils.isNotificationListenerEnabled(this)) {
+            showPermissionDialog()
+        }
+    }
+
+    private fun showPermissionDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Permission Required")
+            .setMessage("To use notification-based triggers, you need to grant Panda the Notification Listener permission in your system settings.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun setupRecyclerView() {

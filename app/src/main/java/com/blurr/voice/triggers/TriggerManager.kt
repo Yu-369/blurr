@@ -43,6 +43,16 @@ class TriggerManager(private val context: Context) {
         return loadTriggers()
     }
 
+    fun rescheduleTrigger(triggerId: String) {
+        val triggers = loadTriggers()
+        val trigger = triggers.find { it.id == triggerId }
+        if (trigger != null && trigger.isEnabled) {
+            // This will calculate the next day's time and set a new exact alarm
+            scheduleAlarm(trigger)
+            android.util.Log.d("TriggerManager", "Rescheduled trigger: ${trigger.id}")
+        }
+    }
+
     fun updateTrigger(trigger: Trigger) {
         val triggers = loadTriggers()
         val index = triggers.indexOfFirst { it.id == trigger.id }
@@ -61,6 +71,7 @@ class TriggerManager(private val context: Context) {
         val intent = Intent(context, TriggerReceiver::class.java).apply {
             action = TriggerReceiver.ACTION_EXECUTE_TASK
             putExtra(TriggerReceiver.EXTRA_TASK_INSTRUCTION, trigger.instruction)
+            putExtra(TriggerReceiver.EXTRA_TRIGGER_ID, trigger.id)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -72,8 +83,8 @@ class TriggerManager(private val context: Context) {
 
         val calendar = Calendar.getInstance().apply {
             timeInMillis = System.currentTimeMillis()
-            set(Calendar.HOUR_OF_DAY, trigger.hour)
-            set(Calendar.MINUTE, trigger.minute)
+            set(Calendar.HOUR_OF_DAY, trigger.hour!!)
+            set(Calendar.MINUTE, trigger.minute!!)
             set(Calendar.SECOND, 0)
         }
 
@@ -82,12 +93,25 @@ class TriggerManager(private val context: Context) {
             calendar.add(Calendar.DAY_OF_YEAR, 1)
         }
 
-        alarmManager.setInexactRepeating(
-            AlarmManager.RTC_WAKEUP,
-            calendar.timeInMillis,
-            AlarmManager.INTERVAL_DAY,
-            pendingIntent
-        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            } else {
+                // Handle case where permission is not granted.
+                // For now, we'll log a warning. The UI part of the plan will handle prompting the user.
+                android.util.Log.w("TriggerManager", "Cannot schedule exact alarm, permission not granted.")
+            }
+        } else {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                pendingIntent
+            )
+        }
     }
 
     private fun cancelAlarm(trigger: Trigger) {

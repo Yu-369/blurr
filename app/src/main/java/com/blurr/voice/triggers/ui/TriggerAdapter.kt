@@ -40,7 +40,20 @@ class TriggerAdapter(
 
         fun bind(trigger: Trigger) {
             instructionTextView.text = trigger.instruction
-            timeTextView.text = String.format(Locale.getDefault(), "At %02d:%02d", trigger.hour, trigger.minute)
+
+            when (trigger.type) {
+                TriggerType.SCHEDULED_TIME -> {
+                    timeTextView.text = String.format(
+                        Locale.getDefault(),
+                        "At %02d:%02d",
+                        trigger.hour ?: 0,
+                        trigger.minute ?: 0
+                    )
+                }
+                TriggerType.NOTIFICATION -> {
+                    timeTextView.text = "On notification from ${trigger.appName}"
+                }
+            }
 
             enabledSwitch.setOnCheckedChangeListener(null) // Avoid triggering listener during bind
             enabledSwitch.isChecked = trigger.isEnabled

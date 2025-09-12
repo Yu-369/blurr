@@ -16,4 +16,4 @@ local.properties
 *.tmp
 *.temp
 app/build.gradle.kts.bak
-app/google-services.json
+app/google-services.jsonlocal.properties

@@ -30,6 +30,11 @@ import kotlinx.coroutines.launch
 
 class MemoriesActivity : AppCompatActivity() {
     
+    // Memory feature flag - temporarily disabled
+    companion object {
+        const val MEMORY_ENABLED = false
+    }
+    
     private lateinit var memoriesRecyclerView: RecyclerView
     private lateinit var emptyStateText: TextView
     private lateinit var addMemoryFab: FloatingActionButton
@@ -66,9 +71,19 @@ class MemoriesActivity : AppCompatActivity() {
             startActivity(intent)
         }
         
-        // Setup FAB click listener
+        // Setup FAB click listener - disable if memory is off
         addMemoryFab.setOnClickListener {
-            showAddMemoryDialog()
+            if (MEMORY_ENABLED) {
+                showAddMemoryDialog()
+            } else {
+                Toast.makeText(this, "Memory functionality is temporarily disabled", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
+        // Disable FAB if memory is disabled
+        if (!MEMORY_ENABLED) {
+            addMemoryFab.alpha = 0.5f
+            addMemoryFab.isEnabled = false
         }
     }
     
@@ -121,6 +136,12 @@ class MemoriesActivity : AppCompatActivity() {
     }
     
     private fun loadMemories() {
+        if (!MEMORY_ENABLED) {
+            Log.d("MemoriesActivity", "Memory disabled, showing empty state with disabled message")
+            updateUI(emptyList())
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 val memories = memoryManager.getAllMemoriesList()
@@ -132,9 +153,16 @@ class MemoriesActivity : AppCompatActivity() {
     }
     
     private fun updateUI(memories: List<Memory>) {
-        if (memories.isEmpty()) {
+        if (memories.isEmpty() || !MEMORY_ENABLED) {
             memoriesRecyclerView.visibility = View.GONE
             emptyStateText.visibility = View.VISIBLE
+            
+            // Update empty state text based on memory status
+            emptyStateText.text = if (!MEMORY_ENABLED) {
+                "Memory functionality is temporarily disabled.\nPanda memory is turned off as of yet."
+            } else {
+                "No memories yet.\nTap the + button to add your first memory!"
+            }
         } else {
             memoriesRecyclerView.visibility = View.VISIBLE
             emptyStateText.visibility = View.GONE

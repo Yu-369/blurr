@@ -26,7 +26,7 @@ https://github.com/user-attachments/assets/cf76bb00-2bf4-4274-acad-d9f4c0d47188
 
 * 🧠 **Intelligent UI Automation:** Panda sees the screen, understands the context of UI elements, and performs actions like tapping, swiping, and typing to navigate apps and complete tasks.
 * 📢 **High Qaulity voice:** Panda have high quality voice by GCS's Chirp  
-* 💾 **Persistent & Personalized local Memory:** Panda remembers key facts about you and learned procedures across sessions. It learns your preferences, contacts, and habits to become a truly personalized assistant over time.
+* 💾 **Persistent & Personalized local Memory:** ⚠️ **Temporarily Disabled** - Panda memory is turned off as of yet. Memory functionality will be restored in a future update.
 
 ## Architecture Overview
 

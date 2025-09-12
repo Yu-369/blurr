@@ -362,13 +362,18 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(wakeWordFailureReceiver)
     }
     private fun showDisclaimerDialog() {
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Disclaimer")
             .setMessage("Panda is an experimental AI assistant and is still in development. It may not always be accurate or perform as expected. It does small task better. Your understanding is appreciated!")
             .setPositiveButton("Okay") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
+        
+        // Set the button text color to white
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+            ContextCompat.getColor(this, R.color.white)
+        )
     }
 
 
@@ -407,6 +412,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         alertDialog.show()
+        
+        // Set the button text color to white
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+            ContextCompat.getColor(this, R.color.white)
+        )
     }
     private fun updateTaskCounter() {
         lifecycleScope.launch {

@@ -1,11 +1,13 @@
 package com.blurr.voice.services
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -42,6 +44,16 @@ class EnhancedWakeWordService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("EnhancedWakeWordService", "Service starting...")
         
+        // Check if we have the required RECORD_AUDIO permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Log.e("EnhancedWakeWordService", "RECORD_AUDIO permission not granted. Cannot start foreground service.")
+            Toast.makeText(this, "Microphone permission required for wake word", Toast.LENGTH_LONG).show()
+            // Make sure to reset the isRunning flag
+            isRunning = false
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        
         usePorcupine = intent?.getBooleanExtra(EXTRA_USE_PORCUPINE, false) ?: false
         
         createNotificationChannel()
@@ -62,7 +74,16 @@ class EnhancedWakeWordService : Service() {
             .setContentIntent(pendingIntent)
             .build()
 
-        startForeground(1338, notification)
+        try {
+            startForeground(1338, notification)
+        } catch (e: SecurityException) {
+            Log.e("EnhancedWakeWordService", "Failed to start foreground service: ${e.message}")
+            Toast.makeText(this, "Cannot start wake word service - permission missing", Toast.LENGTH_LONG).show()
+            // Make sure to reset the isRunning flag
+            isRunning = false
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         // Start the appropriate wake word detector
         startWakeWordDetection()

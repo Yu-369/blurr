@@ -257,43 +257,9 @@ class VisualFeedbackManager private constructor(private val context: Context) {
                         WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT
             ).apply {
-                gravity = Gravity.BOTTOM
-                // Initial bottom margin when keyboard is not visible
-                y = (16 * context.resources.displayMetrics.density).toInt() // 16dp bottom margin
-                // Ensure the input adjusts with the keyboard
-                softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            }
-
-            ViewCompat.setOnApplyWindowInsetsListener(inputBoxView!!) { view, insets ->
-                val imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-                val navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
-
-                Log.d(TAG, "Keyboard insets - IME height: $imeHeight, Nav bar height: $navigationBarHeight")
-
-                // For bottom gravity, y represents margin from bottom of screen
-                // When keyboard is visible, we want the input box to appear just above it
-                // Since IME height includes the keyboard, we set y to the keyboard height
-                // This positions the input box above the keyboard
-                params.y = if (imeHeight > 0) {
-                    // Keyboard is visible - position input box above it
-                    imeHeight
-                } else {
-                    // Keyboard is hidden - use minimal bottom margin
-                    (16 * context.resources.displayMetrics.density).toInt() // 16dp bottom margin
-                }
-
-                Log.d(TAG, "Setting input box y position to: ${params.y}")
-
-                // Apply the updated layout parameters
-                if (view.isAttachedToWindow) {
-                    try {
-                        windowManager.updateViewLayout(view, params)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error updating input box layout", e)
-                    }
-                }
-
-                WindowInsetsCompat.CONSUMED // Consume the insets
+                gravity = Gravity.TOP
+                // Top margin with sufficient space
+                y = (80 * context.resources.displayMetrics.density).toInt() // 80dp top margin
             }
 
             inputField?.setOnEditorActionListener { v, actionId, _ ->

@@ -192,6 +192,20 @@
                 android:text="Save Key"
                 android:textColor="@android:color/white" />
 
+            <TextView
+                android:id="@+id/wakeWordButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/rounded_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="12dp"
+                android:text="@string/enable_wake_word"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+
         </LinearLayout>
 
         <LinearLayout

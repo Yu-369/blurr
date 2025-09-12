@@ -67,10 +67,6 @@ data class ModelDecision(
 
 class ConversationalAgentService : Service() {
 
-    // Memory feature flag - temporarily disabled
-    companion object {
-        const val MEMORY_ENABLED = false
-    }
 
     private val speechCoordinator by lazy { SpeechCoordinator.getInstance(this) }
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -107,6 +103,7 @@ class ConversationalAgentService : Service() {
         const val NOTIFICATION_ID = 3
         const val CHANNEL_ID = "ConversationalAgentChannel"
         var isRunning = false
+        const val MEMORY_ENABLED = false
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

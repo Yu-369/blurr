@@ -82,7 +82,7 @@
                 android:focusable="true"
                 android:gravity="center"
                 android:padding="12dp"
-                android:text="Save Picovoice Key"
+                android:text="Setup Wake Word"
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
 

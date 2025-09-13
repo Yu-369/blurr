@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.io.FileOutputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -16,6 +17,13 @@ val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
+}
+
+// Load version properties
+val versionProps = Properties()
+val versionPropsFile = rootProject.file("version.properties")
+if (versionPropsFile.exists()) {
+    versionProps.load(FileInputStream(versionPropsFile))
 }
 
 android {
@@ -39,9 +47,8 @@ android {
         applicationId = "com.blurr.voice"
         minSdk = 24
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.0.13" +
-                ""
+        versionCode = versionProps.getProperty("VERSION_CODE", "13").toInt()
+        versionName = versionProps.getProperty("VERSION_NAME", "1.0.13")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -142,4 +149,57 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics-ndk")
     implementation(libs.firebase.firestore)
 
+}
+
+// Task to increment version for release builds
+tasks.register("incrementVersion") {
+    doLast {
+        val versionFile = rootProject.file("version.properties")
+        val props = Properties()
+        props.load(FileInputStream(versionFile))
+        
+        val currentVersionCode = props.getProperty("VERSION_CODE").toInt()
+        val currentVersionName = props.getProperty("VERSION_NAME")
+        
+        // Increment version code
+        val newVersionCode = currentVersionCode + 1
+        
+        // Increment patch version in semantic versioning (x.y.z -> x.y.z+1)
+        val versionParts = currentVersionName.split(".")
+        val newPatchVersion = if (versionParts.size >= 3) {
+            versionParts[2].toInt() + 1
+        } else {
+            1
+        }
+        val newVersionName = if (versionParts.size >= 2) {
+            "${versionParts[0]}.${versionParts[1]}.$newPatchVersion"
+        } else {
+            "1.0.$newPatchVersion"
+        }
+        
+        // Update properties
+        props.setProperty("VERSION_CODE", newVersionCode.toString())
+        props.setProperty("VERSION_NAME", newVersionName)
+        
+        // Save back to file with comments
+        val output = FileOutputStream(versionFile)
+        output.use { fileOutput ->
+            fileOutput.write("# Version configuration for Blurr Android App\n".toByteArray())
+            fileOutput.write("# This file is automatically updated during release builds\n".toByteArray())
+            fileOutput.write("# Do not modify manually - use Gradle tasks to update versions\n\n".toByteArray())
+            fileOutput.write("# Current version code (integer - increments by 1 each release)\n".toByteArray())
+            fileOutput.write("VERSION_CODE=$newVersionCode\n\n".toByteArray())
+            fileOutput.write("# Current version name (semantic version - increments patch number each release)\n".toByteArray())
+            fileOutput.write("VERSION_NAME=$newVersionName".toByteArray())
+        }
+        
+        println("Version incremented to: versionCode=$newVersionCode, versionName=$newVersionName")
+    }
+}
+
+// Make release builds automatically increment version
+tasks.whenTaskAdded {
+    if (name == "assembleRelease" || name == "bundleRelease") {
+        dependsOn("incrementVersion")
+    }
 }

@@ -11,15 +11,20 @@ import android.widget.NumberPicker
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import com.blurr.voice.api.GoogleTts
 import com.blurr.voice.api.PicovoiceKeyManager
 import com.blurr.voice.api.TTSVoice
 import com.blurr.voice.utilities.SpeechCoordinator
 import com.blurr.voice.utilities.VoicePreferenceManager
 import com.blurr.voice.utilities.UserProfileManager
+import com.blurr.voice.utilities.WakeWordManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -35,8 +40,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var editUserName: android.widget.EditText
     private lateinit var editUserEmail: android.widget.EditText
     private lateinit var editWakeWordKey: android.widget.EditText
-    private lateinit var buttonSaveWakeWordKey: Button
     private lateinit var textGetPicovoiceKeyLink: TextView // NEW: Declare the TextView for the link
+    private lateinit var wakeWordButton: TextView // NEW: Declare wake word button
+    private lateinit var wakeWordManager: WakeWordManager // NEW: Wake word manager
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String> // NEW: Permission launcher
 
 
     private lateinit var sc: SpeechCoordinator
@@ -54,6 +61,18 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+
+        // Initialize permission launcher first
+        requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                Toast.makeText(this, "Permission granted!", Toast.LENGTH_SHORT).show()
+                // The manager will handle the service start after permission is granted.
+                wakeWordManager.handleWakeWordButtonClick(wakeWordButton)
+                updateWakeWordButtonState()
+            } else {
+                Toast.makeText(this, "Permission denied.", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         initialize()
         setupUI()
@@ -73,6 +92,8 @@ class SettingsActivity : AppCompatActivity() {
         sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         sc = SpeechCoordinator.getInstance(this)
         availableVoices = GoogleTts.getAvailableVoices()
+        // Initialize wake word manager
+        wakeWordManager = WakeWordManager(this, requestPermissionLauncher)
     }
 
     private fun setupUI() {
@@ -81,7 +102,7 @@ class SettingsActivity : AppCompatActivity() {
         permissionsInfoButton = findViewById(R.id.permissionsInfoButton)
       
         editWakeWordKey = findViewById(R.id.editWakeWordKey)
-        buttonSaveWakeWordKey = findViewById(R.id.buttonSaveWakeWordKey)
+        wakeWordButton = findViewById(R.id.wakeWordButton) // NEW: Initialize wake word button
 
         editUserName = findViewById(R.id.editUserName)
         editUserEmail = findViewById(R.id.editUserEmail)
@@ -113,11 +134,28 @@ class SettingsActivity : AppCompatActivity() {
             val intent = Intent(this, PermissionsActivity::class.java)
             startActivity(intent)
         }
-        buttonSaveWakeWordKey.setOnClickListener {
-            val userKey = editWakeWordKey.text.toString().trim()
+        wakeWordButton.setOnClickListener {
             val keyManager = PicovoiceKeyManager(this)
-            keyManager.saveUserProvidedKey(userKey) // You will create this method next
-            Toast.makeText(this, "Wake word key saved.", Toast.LENGTH_SHORT).show()
+            
+            // Step 1: Save key if provided in the EditText
+            val userKey = editWakeWordKey.text.toString().trim()
+            if (userKey.isNotEmpty()) {
+                keyManager.saveUserProvidedKey(userKey)
+                Toast.makeText(this, "Wake word key saved.", Toast.LENGTH_SHORT).show()
+            }
+            
+            // Step 2: Check if we have a key (either just saved or previously saved)
+            val hasKey = !keyManager.getUserProvidedKey().isNullOrBlank()
+            
+            if (!hasKey) {
+                showPicovoiceKeyRequiredDialog()
+                return@setOnClickListener
+            }
+            
+            // Step 3: Enable the wake word
+            wakeWordManager.handleWakeWordButtonClick(wakeWordButton)
+            // Give the service a moment to update its state before refreshing the UI
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ updateWakeWordButtonState() }, 500)
         }
         textGetPicovoiceKeyLink.setOnClickListener {
             val url = "https://console.picovoice.ai/login"
@@ -214,11 +252,48 @@ class SettingsActivity : AppCompatActivity() {
         val savedVoiceName = sharedPreferences.getString(KEY_SELECTED_VOICE, DEFAULT_VOICE.name)
         val savedVoice = availableVoices.find { it.name == savedVoiceName } ?: DEFAULT_VOICE
         ttsVoicePicker.value = availableVoices.indexOf(savedVoice)
+        
+        // Update wake word button state
+        updateWakeWordButtonState()
     }
 
     private fun saveSelectedVoice(voice: TTSVoice) {
         VoicePreferenceManager.saveSelectedVoice(this, voice)
         Log.d("SettingsActivity", "Saved voice: ${voice.displayName}")
+    }
+
+    private fun showPicovoiceKeyRequiredDialog() {
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Picovoice Key Required")
+            .setMessage("To enable wake word functionality, you need a Picovoice AccessKey. You can get a free key from the Picovoice Console. Note: The Picovoice dashboard might not be available on mobile browsers sometimes - you may need to use a desktop browser.")
+            .setPositiveButton("Get Key") { _, _ ->
+                // Try to open Picovoice console
+                val url = "https://console.picovoice.ai/login"
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.data = Uri.parse(url)
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Could not open link. No browser found or link unavailable on mobile. Please use a desktop browser.", Toast.LENGTH_LONG).show()
+                    Log.e("SettingsActivity", "Failed to open Picovoice link", e)
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+        
+        // Set button text colors to white
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+            androidx.core.content.ContextCompat.getColor(this, R.color.white)
+        )
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(
+            androidx.core.content.ContextCompat.getColor(this, R.color.white)
+        )
+    }
+
+    private fun updateWakeWordButtonState() {
+        wakeWordManager.updateButtonState(wakeWordButton)
     }
 
 }

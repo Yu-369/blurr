@@ -42,6 +42,7 @@ import com.blurr.voice.utilities.UserIdManager
 import com.blurr.voice.utilities.UserProfileManager
 import com.blurr.voice.utilities.VideoAssetManager
 import com.blurr.voice.utilities.WakeWordManager
+import com.blurr.voice.api.PicovoiceKeyManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.Firebase
@@ -56,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var managePermissionsButton: TextView
     private lateinit var tvPermissionStatus: TextView
     private lateinit var settingsButton: ImageButton
-    private lateinit var wakeWordButton: TextView
+    private lateinit var saveKeyButton: TextView
     private lateinit var userId: String
     private lateinit var permissionManager: PermissionManager
     private lateinit var wakeWordManager: WakeWordManager
@@ -85,8 +86,6 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
                 Toast.makeText(this, "Permission granted!", Toast.LENGTH_SHORT).show()
-                // The manager will handle the service start after permission is granted.
-                wakeWordManager.handleWakeWordButtonClick(wakeWordButton)
             } else {
                 Toast.makeText(this, "Permission denied.", Toast.LENGTH_SHORT).show()
             }
@@ -171,7 +170,7 @@ class MainActivity : AppCompatActivity() {
         settingsButton = findViewById(R.id.settingsButton)
         wakeWordHelpLink = findViewById(R.id.wakeWordHelpLink)
 
-        wakeWordButton = findViewById(R.id.wakeWordButton)
+        saveKeyButton = findViewById(R.id.saveKeyButton)
         tasksRemainingTextView = findViewById(R.id.tasks_remaining_textview)
         freemiumManager = FreemiumManager()
         // Initialize managers
@@ -280,10 +279,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.memoriesButton).setOnClickListener {
             startActivity(Intent(this, MemoriesActivity::class.java))
         }
-        wakeWordButton.setOnClickListener {
-            wakeWordManager.handleWakeWordButtonClick(wakeWordButton)
-            // Give the service a moment to update its state before refreshing the UI
-            handler.postDelayed({ updateUI() }, 500)
+        saveKeyButton.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         managePermissionsButton.setOnClickListener {
@@ -455,7 +452,6 @@ class MainActivity : AppCompatActivity() {
             tvPermissionStatus.text = "Some permissions are missing. Tap below to manage."
             tvPermissionStatus.setTextColor(Color.parseColor("#F44336")) // Red
         }
-        wakeWordManager.updateButtonState(wakeWordButton)
     }
 
     private fun isThisAppDefaultAssistant(): Boolean {

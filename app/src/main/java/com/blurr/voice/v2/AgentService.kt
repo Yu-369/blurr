@@ -174,7 +174,13 @@ class AgentService : Service() {
 
         // Start the service in the foreground.
         val notification = createNotification("Agent is running task: $task")
-        startForeground(NOTIFICATION_ID, notification)
+        try {
+            startForeground(NOTIFICATION_ID, notification)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Failed to start foreground service: ${e.message}")
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         // Track the task in Firebase before starting execution
         serviceScope.launch {

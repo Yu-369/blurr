@@ -49,6 +49,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
@@ -99,15 +101,18 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
                 Toast.makeText(this, "Permission denied.", Toast.LENGTH_SHORT).show()
             }
         }
+
     override fun onActivityResult(result: PaywallResult) {}
+
     private fun launchPaywallActivity() {
         paywallActivityLauncher.launchIfNeeded(requiredEntitlementIdentifier = "pro")
     }
+
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
-        launchPaywallActivity()
+
         auth = Firebase.auth
         val currentUser = auth.currentUser
         val profileManager = UserProfileManager(this)
@@ -289,8 +294,11 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
         findViewById<TextView>(R.id.triggersButton).setOnClickListener {
             startActivity(Intent(this, com.blurr.voice.triggers.ui.TriggersActivity::class.java))
         }
-        findViewById<TextView>(R.id.memoriesButton).setOnClickListener {
-            startActivity(Intent(this, MemoriesActivity::class.java))
+//        findViewById<TextView>(R.id.memoriesButton).setOnClickListener {
+//            startActivity(Intent(this, MemoriesActivity::class.java))
+//        }
+        findViewById<TextView>(R.id.goProButton).setOnClickListener {
+            launchPaywallActivity()
         }
         saveKeyButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -434,12 +442,19 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
     private fun updateTaskCounter() {
         lifecycleScope.launch {
             val tasksLeft = freemiumManager.getTasksRemaining()
-            if (tasksLeft != null && tasksLeft >= 0) {
+            val goProButton = findViewById<TextView>(R.id.goProButton)
+
+            if (tasksLeft == Long.MAX_VALUE) {
+                tasksRemainingTextView.visibility = View.GONE
+                increaseLimitsLink.visibility = View.GONE
+                goProButton.visibility = View.GONE
+
+            } else if (tasksLeft != null && tasksLeft >= 0) {
+
                 tasksRemainingTextView.text = "You have $tasksLeft free tasks remaining."
                 tasksRemainingTextView.visibility = View.VISIBLE
+                goProButton.visibility = View.VISIBLE
 
-                // ADDED: Logic to show/hide the increase limits link
-                // Show the link if the user has 5 or fewer tasks left.
                 if (tasksLeft <= 10) {
                     increaseLimitsLink.visibility = View.VISIBLE
                 } else {
@@ -447,10 +462,9 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
                 }
 
             } else {
-                // Hide both text views if there's an error or count is invalid
                 tasksRemainingTextView.visibility = View.GONE
-                increaseLimitsLink.visibility = View.GONE // ADDED
-            }
+                increaseLimitsLink.visibility = View.GONE
+                goProButton.visibility = View.VISIBLE            }
         }
     }
 

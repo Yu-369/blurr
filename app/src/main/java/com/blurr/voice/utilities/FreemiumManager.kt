@@ -5,6 +5,8 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.firestore
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.awaitCustomerInfo
 
 import kotlinx.coroutines.tasks.await
 
@@ -15,6 +17,16 @@ class FreemiumManager {
 
     companion object {
         const val FREE_PLAN_TASK_LIMIT = 15 // Set your free task limit here
+    }
+
+    private suspend fun isUserSubscribed(): Boolean {
+        return try {
+            val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+            customerInfo.entitlements["pro"]?.isActive == true
+        } catch (e: Exception) {
+            Log.e("FreemiumManager", "Error fetching customer info: $e")
+            false
+        }
     }
 
     /**
@@ -46,6 +58,7 @@ class FreemiumManager {
     }
 
     suspend fun getTasksRemaining(): Long? {
+        if (isUserSubscribed()) return Long.MAX_VALUE
         val currentUser = auth.currentUser ?: return null
         return try {
             val document = db.collection("users").document(currentUser.uid).get().await()
@@ -61,6 +74,8 @@ class FreemiumManager {
      * @return true if tasksRemaining > 0, false otherwise.
      */
     suspend fun canPerformTask(): Boolean {
+        if (isUserSubscribed()) return true
+
         val currentUser = auth.currentUser
         if (currentUser == null) {
             Log.w("FreemiumManager", "Cannot check task count, user is not logged in.")
@@ -83,7 +98,9 @@ class FreemiumManager {
      * Uses an atomic increment operation for safety.
      * This is a "fire and forget" call, we don't block the UI for it.
      */
-    fun decrementTaskCount() {
+    suspend fun decrementTaskCount() {
+        if (isUserSubscribed()) return
+
         val currentUser = auth.currentUser ?: return
         db.collection("users").document(currentUser.uid)
             .update("tasksRemaining", FieldValue.increment(-1))

@@ -17,3 +17,9 @@ local.properties
 *.temp
 app/build.gradle.kts.bak
 app/google-services.json
+
+# Kotlin/Java build artifacts
+*.class
+*.kotlin_module
+META-INF/
+com/

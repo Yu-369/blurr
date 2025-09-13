@@ -19,7 +19,7 @@ https://github.com/user-attachments/assets/cf76bb00-2bf4-4274-acad-d9f4c0d47188
 **Panda** is a proactive, on-device AI agent for Android that autonomously understands natural language commands and operates your phone's UI to achieve them. Inspired by the need to make modern technology more accessible, Panda acts as your personal operator, capable of handling complex, multi-step tasks across different applications.
 
 [![Project Status: WIP](https://img.shields.io/badge/project%20status-wip-yellow.svg)](https://wip.vost.pt/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: Personal Use](https://img.shields.io/badge/License-Personal%20Use%20Only-red.svg)](./LICENSE)
 [![Kotlin Version](https://img.shields.io/badge/Kotlin-1.9.22-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
 
 ## Core Capabilities
@@ -87,7 +87,11 @@ Contributions are welcome! If you have ideas for new features or improvements, f
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under a Personal Use License - see the [LICENSE](LICENSE) file for details.
+
+**Personal & Educational Use:** Free to use, modify, and distribute for personal, educational, and non-commercial purposes.
+
+**Commercial Use:** Requires a separate commercial license. Please contact Panda AI for commercial licensing terms.
 
 ### A small video to help you understand what the project is about. 
 https://github.com/user-attachments/assets/b577072e-2f7f-42d2-9054-3a11160cf87d

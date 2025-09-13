@@ -44,6 +44,24 @@
                     android:layout_height="wrap_content"
                     android:theme="@style/AppTheme.NumberPicker"
                     android:timePickerMode="spinner" />
+                <TextView
+                    style="@style/PermissionHeading"
+                    android:text="Task Instruction" />
+
+                <EditText
+                    android:id="@+id/instructionEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_border"
+                    android:hint="e.g., 'Read the notification'"
+                    android:inputType="textMultiLine"
+                    android:minLines="2"
+                    android:maxLines="5"
+                    android:scrollbars="vertical"
+                    android:gravity="top"
+                    android:padding="12dp"
+                    android:textColor="@color/white"
+                    android:textColorHint="#8A8A8E" />
 
                 <TextView
                     style="@style/PermissionHeading"
@@ -85,24 +103,6 @@
                     tools:listitem="@layout/item_app" />
             </LinearLayout>
 
-            <TextView
-                style="@style/PermissionHeading"
-                android:text="Task Instruction" />
-
-            <EditText
-                android:id="@+id/instructionEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/edit_text_border"
-                android:hint="e.g., 'Read the notification'"
-                android:inputType="textMultiLine"
-                android:minLines="2"
-                android:maxLines="5"
-                android:scrollbars="vertical"
-                android:gravity="top"
-                android:padding="12dp"
-                android:textColor="@color/white"
-                android:textColorHint="#8A8A8E" />
 
             <Button
                 android:id="@+id/saveTriggerButton"

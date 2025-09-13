@@ -6,7 +6,7 @@
     <string name="write_things_you_want_to_avoid">Write Things you want to avoid</string>
     <string name="accessibility_service_label">Panda Accessibility Service</string>
     <string name="accessibility_service_description">To enable "Panda", our digital assistant, this service allows the app to listen for commands and perform actions like tapping and swiping. This is essential for controlling your phone with your voice.</string>
-    <string name="view_source_code_on_github">⭐ Star us on Github</string>
+    <string name="view_source_code_on_github">⭐ The entire code is on Github</string>
     <string name="hello_sir">Hey, Panda Here</string>
     <string name="assistant_at_nyour_command">Assistant at\nYour Command</string>
     <string name="grant_accessibility_permission">Grant Accessibility Permission</string>
@@ -28,12 +28,12 @@
     <string name="hold_to_speak">Hold to Speak Command</string>
     <string name="shortcut_wake_up_short">Wake up Panda</string>
     <string name="shortcut_wake_up_long">Start a new conversation with Panda</string>
-    <string name="listening">Listening...</string>
+    <string name="listening">Listening…</string>
     <string name="speech_error">Speech recognition error</string>
     <string name="no_speech_detected">No speech detected</string>
     <string name="input_box_hint">+ Ask Panda</string>
     <string name="speech_permission_required">Microphone permission required for voice input</string>
-    <string name="processing_voice_command">Processing voice command...</string>
+    <string name="processing_voice_command">Processing voice command…</string>
     <string name="performing_task">I will perform the task: %s</string>
     <string name="starting_agent_task">Starting agent task for: %s</string>
     <string name="clarification_needed">Clarification needed</string>
@@ -79,7 +79,7 @@
     <string name="test_selected_voice">Test Selected Voice</string>
     <string name="save_settings">Save Settings</string>
     <string name="settings_saved">Settings saved successfully</string>
-    <string name="testing_voice">Testing voice...</string>
+    <string name="testing_voice">Testing voice…</string>
     <string name="why_permissions_needed">Why are these permissions needed?</string>
     <string name="permissions_explained_title">Permissions Explained</string>
     <string name="accessibility_permission_title">Accessibility Service</string>

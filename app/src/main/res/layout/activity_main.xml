@@ -73,15 +73,17 @@
                 android:textSize="16sp" />
 
             <TextView
-                android:id="@+id/wakeWordButton"
+                android:id="@+id/saveKeyButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:background="@android:color/transparent"
+                android:background="@drawable/btn_with_border"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center"
                 android:padding="12dp"
-                android:text="@string/enable_wake_word"
-                android:textColor="#BDBDBD"
+                android:text="Setup Wake Word"
+                android:textColor="@android:color/white"
                 android:textSize="16sp" />
 
             <TextView

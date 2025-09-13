@@ -1,10 +1,12 @@
 package com.blurr.voice
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.animation.ValueAnimator
@@ -16,7 +18,9 @@ import android.os.IBinder
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.blurr.voice.agent.v1.AgentConfig
 import com.blurr.voice.agent.v1.ClarificationAgent
 import com.blurr.voice.agent.v1.InfoPool
@@ -175,7 +179,23 @@ class ConversationalAgentService : Service() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("ConvAgent", "Service onStartCommand")
-        startForeground(NOTIFICATION_ID, createNotification())
+        
+        // Check if we have the required RECORD_AUDIO permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Log.e("ConvAgent", "RECORD_AUDIO permission not granted. Cannot start foreground service.")
+            Toast.makeText(this, "Microphone permission required for voice assistant", Toast.LENGTH_LONG).show()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        
+        try {
+            startForeground(NOTIFICATION_ID, createNotification())
+        } catch (e: SecurityException) {
+            Log.e("ConvAgent", "Failed to start foreground service: ${e.message}")
+            Toast.makeText(this, "Cannot start voice assistant - permission missing", Toast.LENGTH_LONG).show()
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         // Track conversation initiation
         firebaseAnalytics.logEvent("conversation_initiated", null)

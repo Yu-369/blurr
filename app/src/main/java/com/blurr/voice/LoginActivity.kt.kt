@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button // Changed from SignInButton
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -32,6 +33,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var signInButton: Button // Changed from SignInButton
     private lateinit var progressBar: ProgressBar
+    private lateinit var loadingText: TextView
 
     // New ActivityResultLauncher for the modern Identity API
     private lateinit var googleSignInLauncher: ActivityResultLauncher<IntentSenderRequest>
@@ -42,6 +44,7 @@ class LoginActivity : AppCompatActivity() {
 
         signInButton = findViewById(R.id.googleSignInButton)
         progressBar = findViewById(R.id.progressBar)
+        loadingText = findViewById(R.id.loadingText)
         firebaseAuth = Firebase.auth
 
         // 1. Initialize the OneTapClient
@@ -70,19 +73,25 @@ class LoginActivity : AppCompatActivity() {
                     val googleIdToken = credential.googleIdToken
                     if (googleIdToken != null) {
                         Log.d("LoginActivity", "Got Google ID Token.")
-                        // Pass the token to Firebase
+                        // Pass the token to Firebase - keep progress bar visible during Firebase auth
                         firebaseAuthWithGoogle(googleIdToken)
                     } else {
                         Log.e("LoginActivity", "Google ID Token was null.")
                         Toast.makeText(this, "Google Sign-In failed.", Toast.LENGTH_SHORT).show()
+                        progressBar.visibility = View.GONE
+                        loadingText.visibility = View.GONE
                     }
                 } catch (e: ApiException) {
                     Log.w("LoginActivity", "Google sign in failed", e)
                     Toast.makeText(this, "Google Sign-In failed.", Toast.LENGTH_SHORT).show()
+                    progressBar.visibility = View.GONE
+                    loadingText.visibility = View.GONE
                 }
+            } else {
+                // User cancelled or there was an error - hide progress bar
+                progressBar.visibility = View.GONE
+                loadingText.visibility = View.GONE
             }
-            // Always hide the progress bar after the attempt
-            progressBar.visibility = View.GONE
         }
 
 
@@ -93,6 +102,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun signIn() {
         progressBar.visibility = View.VISIBLE
+        loadingText.visibility = View.VISIBLE
         // 4. Launch the sign-in flow
         oneTapClient.beginSignIn(signInRequest)
             .addOnSuccessListener(this) { result ->
@@ -104,12 +114,14 @@ class LoginActivity : AppCompatActivity() {
                 } catch (e: Exception) {
                     Log.e("LoginActivity", "Couldn't start One Tap UI: ${e.localizedMessage}")
                     progressBar.visibility = View.GONE
+                    loadingText.visibility = View.GONE
                 }
             }
             .addOnFailureListener(this) { e ->
                 Log.e("LoginActivity", "Sign-in failed: ${e.localizedMessage}")
                 Toast.makeText(this, "Sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
                 progressBar.visibility = View.GONE
+                loadingText.visibility = View.GONE
             }
     }
 
@@ -117,6 +129,10 @@ class LoginActivity : AppCompatActivity() {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         firebaseAuth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
+                // Hide progress bar and loading text when Firebase authentication completes
+                progressBar.visibility = View.GONE
+                loadingText.visibility = View.GONE
+                
                 if (task.isSuccessful) {
                     val isNewUser = task.result?.additionalUserInfo?.isNewUser ?: false
 

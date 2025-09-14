@@ -109,7 +109,7 @@
                         android:layout_height="wrap_content"
                         android:text="Run a task when a notification arrives."
                         android:textColor="#CECECE"
-                        android:textSize="16sp"/>
+                        android:textSize="16sp" />
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>

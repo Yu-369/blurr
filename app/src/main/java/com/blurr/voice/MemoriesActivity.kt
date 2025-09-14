@@ -20,7 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.blurr.voice.data.Memory
 import com.blurr.voice.data.MemoryManager
-import com.blurr.voice.v2.llm.GeminiApi
+//import com.blurr.voice.v2.llm.GeminiApi
 import com.blurr.voice.v2.llm.GeminiMessage
 import com.blurr.voice.v2.llm.MessageRole
 import com.blurr.voice.v2.llm.TextPart

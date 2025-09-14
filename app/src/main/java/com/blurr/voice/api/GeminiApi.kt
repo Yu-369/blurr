@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Base64
 import android.util.Log
+import com.blurr.voice.BuildConfig
 import com.blurr.voice.MyApplication
 import com.google.ai.client.generativeai.type.ImagePart
 import com.google.ai.client.generativeai.type.TextPart
@@ -22,6 +23,7 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileWriter
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -32,6 +34,8 @@ import java.util.concurrent.TimeUnit
  * and logs all requests and responses to a persistent file.
  */
 object GeminiApi {
+    private val proxyUrl: String = BuildConfig.GCLOUD_PROXY_URL
+    private val proxyKey: String = BuildConfig.GCLOUD_PROXY_URL_KEY
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -74,10 +78,11 @@ object GeminiApi {
             Log.d("GeminiApi", "=== GEMINI API REQUEST (Attempt ${attempts + 1}) ===")
             Log.d("GeminiApi", "Using API key ending in: ...${currentApiKey.takeLast(4)}")
             Log.d("GeminiApi", "Model: $modelName")
-            
+
             val attemptStartTime = System.currentTimeMillis()
             // IMPORTANT: Define payload here so it's accessible in the catch block for logging.
-            val payload = buildPayload(chat)
+            // MODIFIED: Pass modelName to buildPayload
+            val payload = buildPayload(chat, modelName)
 
             Log.d("GeminiApi", "=== GEMINI API REQUEST (Attempt ${attempts + 1}) ===")
             Log.d("GeminiApi", "Model: $modelName")
@@ -85,8 +90,10 @@ object GeminiApi {
 
             try {
                 val request = Request.Builder()
-                    .url("https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$currentApiKey")
+                    .url(proxyUrl)
                     .post(payload.toString().toRequestBody("application/json".toMediaType()))
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("X-API-Key", proxyKey)
                     .build()
 
                 val requestStartTime = System.currentTimeMillis()
@@ -105,7 +112,8 @@ object GeminiApi {
                         throw Exception("API Error ${response.code}: $responseBody")
                     }
 
-                    val parsedResponse = parseSuccessResponse(responseBody)
+                    // Assuming the proxy returns the standard Gemini API response format
+                    val parsedResponse = responseBody
 
                     val logEntry = createLogEntry(
                         attempt = attempts + 1,
@@ -124,7 +132,7 @@ object GeminiApi {
                         modelName = modelName,
                         prompt = lastUserPrompt,
                         imagesCount = images.size,
-                        responseCode = null,
+                        responseCode = null, // Note: This was null, kept as is
                         responseTime = requestTime,
                         totalTime = totalAttemptTime,
                         responseBody = responseBody,
@@ -142,19 +150,19 @@ object GeminiApi {
                 Log.e("GeminiApi", "=== GEMINI API ERROR (Attempt ${attempts + 1}) ===", e)
 
                 // Save the error log entry to a file.
-                    val logEntry = createLogEntry(
-                        attempt = attempts + 1,
-                        modelName = modelName,
-                        prompt = lastUserPrompt,
-                        imagesCount = images.size,
-                        payload = payload.toString(), // Log the payload that caused the error
-                        responseCode = null,
-                        responseBody = null,
-                        responseTime = 0,
-                        totalTime = totalAttemptTime,
-                        error = e.message
-                    )
-                    saveLogToFile(MyApplication.appContext, logEntry)
+                val logEntry = createLogEntry(
+                    attempt = attempts + 1,
+                    modelName = modelName,
+                    prompt = lastUserPrompt,
+                    imagesCount = images.size,
+                    payload = payload.toString(), // Log the payload that caused the error
+                    responseCode = null,
+                    responseBody = null,
+                    responseTime = 0,
+                    totalTime = totalAttemptTime,
+                    error = e.message
+                )
+                saveLogToFile(MyApplication.appContext, logEntry)
                 val logData = createLogDataMap(
                     attempt = attempts + 1,
                     modelName = modelName,
@@ -183,52 +191,95 @@ object GeminiApi {
         return null
     }
 
-    private fun buildPayload(chat: List<Pair<String, List<Any>>>): JSONObject {
-        val contentsArray = JSONArray()
-        // Loop through the entire conversation history
-        chat.forEach { (role, parts) ->
-            val jsonParts = JSONArray()
+    /**
+     * MODIFIED: This function now builds the payload to match the structure required by the proxy in code-2.
+     * The new structure is: { "modelName": "...", "messages": [ { "role": "...", "parts": [ { "text": "..." } ] } ] }
+     * NOTE: This proxy structure does not support images. ImageParts will be ignored.
+     */
+    private fun buildPayload(chat: List<Pair<String, List<Any>>>, modelName: String): JSONObject {
+        val rootObject = JSONObject()
+        rootObject.put("modelName", modelName)
 
-            // Handle text and image parts for each role
+        val messagesArray = JSONArray()
+        chat.forEach { (role, parts) ->
+            val messageObject = JSONObject()
+            messageObject.put("role", role.lowercase())
+
+            val jsonParts = JSONArray()
             parts.forEach { part ->
                 when (part) {
                     is TextPart -> {
-                        jsonParts.put(JSONObject().put("text", part.text))
+                        // The structure for a part is {"text": "..."}
+                        val partObject = JSONObject().put("text", part.text)
+                        jsonParts.put(partObject)
                     }
                     is ImagePart -> {
-                        val stream = ByteArrayOutputStream()
-                        part.image.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-                        val base64Image = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
-                        val imagePart = JSONObject().put("inline_data", JSONObject()
-                            .put("mime_type", "image/jpeg")
-                            .put("data", base64Image)
-                        )
-                        jsonParts.put(imagePart)
+                        // Log a warning that images are being skipped for the proxy call
+                        Log.w("GeminiApi", "ImagePart found but skipped. The proxy payload format does not support images.")
                     }
                 }
             }
 
-            val contentObject = JSONObject()
-                .put("role", role)
-                .put("parts", jsonParts)
-            contentsArray.put(contentObject)
+            // Only add the message to the array if it contains text parts
+            if (jsonParts.length() > 0) {
+                messageObject.put("parts", jsonParts)
+                messagesArray.put(messageObject)
+            }
         }
-        return JSONObject().put("contents", contentsArray)
+
+        rootObject.put("messages", messagesArray)
+        return rootObject
     }
 
+    /**
+     * This function parses the standard response from the Gemini API.
+     * It is assumed the proxy forwards this response structure without modification.
+     */
     private fun parseSuccessResponse(responseBody: String): String? {
-        val json = JSONObject(responseBody)
-        if (!json.has("candidates")) {
-            Log.w("GeminiApi", "API response has no 'candidates'. It was likely blocked. Full response: $responseBody")
-            return null
+        return try {
+            val json = JSONObject(responseBody)
+            // Handle cases where the proxy might return a simplified text response directly
+            if (json.has("text")) {
+                return json.getString("text")
+            }
+            // Standard Gemini API response parsing
+            if (!json.has("candidates")) {
+                Log.w("GeminiApi", "API response has no 'candidates'. It was likely blocked. Full response: $responseBody")
+                // Check for proxy-specific error format
+                if (json.has("error")) {
+                    Log.e("GeminiApi", "Proxy returned an error: ${json.getString("error")}")
+                }
+                return null
+            }
+            val candidates = json.getJSONArray("candidates")
+            if (candidates.length() == 0) {
+                Log.w("GeminiApi", "API response has an empty 'candidates' array. Full response: $responseBody")
+                return null
+            }
+            val firstCandidate = candidates.getJSONObject(0)
+            if (!firstCandidate.has("content")) {
+                Log.w("GeminiApi", "First candidate has no 'content' object. Full response: $responseBody")
+                return null
+            }
+            val content = firstCandidate.getJSONObject("content")
+            if (!content.has("parts")) {
+                Log.w("GeminiApi", "Content object has no 'parts' array. Full response: $responseBody")
+                return null
+            }
+            val parts = content.getJSONArray("parts")
+            if (parts.length() == 0) {
+                Log.w("GeminiApi", "Parts array is empty. Full response: $responseBody")
+                return null
+            }
+            parts.getJSONObject(0).getString("text")
+        } catch (e: Exception) {
+            Log.e("GeminiApi", "Failed to parse successful response: $responseBody", e)
+            // As a fallback, if parsing fails but there was a response, return the raw string.
+            // The proxy might be configured to return plain text on success.
+            responseBody
         }
-        return json.getJSONArray("candidates")
-            .getJSONObject(0)
-            .getJSONObject("content")
-            .getJSONArray("parts")
-            .getJSONObject(0)
-            .getString("text")
     }
+
 
     private fun saveLogToFile(context: Context, logEntry: String) {
         try {

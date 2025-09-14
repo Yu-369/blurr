@@ -1,17 +1,13 @@
 package com.blurr.voice.v2.llm
 
 import android.util.Log
-import androidx.room.ForeignKey
 import com.blurr.voice.BuildConfig
 import com.blurr.voice.api.ApiKeyManager
 import com.blurr.voice.v2.AgentOutput
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.Content
-import com.google.ai.client.generativeai.type.GenerateContentResponse
 import com.google.ai.client.generativeai.type.GenerationConfig
 import com.google.ai.client.generativeai.type.RequestOptions
-import com.google.ai.client.generativeai.type.Schema
-import com.google.ai.client.generativeai.type.ServerException
 import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable

@@ -47,10 +47,10 @@
     "<b>• Perform Actions:</b> Execute touch gestures, taps, swipes, and navigation (Back, Home, Recent Apps) on your behalf based on your voice commands.\n\n"
     "<b>• App Interaction:</b> Open apps, fill forms, scroll through content, and navigate between different screens as requested.\n\n"
     "<b>🔒 Privacy &amp; Data Protection:</b>\n"
-    "• All processing happens locally on your device\n"
-    "• No personal data is collected or transmitted\n"
-    "• Screen content is only accessed when you actively use Panda\n"
-    "• We implement safeguards to protect sensitive information\n\n"
+    "• All processing happens on Gemini API\n"
+    "• No personal data is collected or but it is sent to Google Gemini\n"
+    "• Screen content is only accessed when you actively use Panda, otherwise Panda doesnt access screen content\n"
+    "• We implement safeguards to protect sensitive information, but Panda can still make mistake\n\n"
     "<b>♿ Accessibility Benefits:</b>\n"
     "This service enables hands-free device control, making smartphones more accessible for users with disabilities, visual impairments, or mobility limitations.\n\n"
     "<b>By proceeding, you understand and consent to Panda using accessibility services for AI-powered device automation.</b>"
@@ -98,9 +98,9 @@
     <string name="microphone_permission_desc">The microphone is required for the voice command and wake-word features. It allows you to give instructions to Panda by speaking.</string>
     <string name="overlay_permission_title">Display Over Other Apps</string>
     <string name="overlay_permission_desc">This permission is used to show visual feedback, such as the questions that panda have, captions and the voice wave animations, on top of other apps while Panda is working.</string>
-    <string name="at_the_end_of_a_conversation_panda_s_ai_powered_by_google_s_gemini_model_analyzes_the_dialogue_to_identify_lasting_facts_it_s_trained_to_ignore_fleeting_or_unimportant_details_for_example_if_you_say_remind_me_to_call_my_brother_ankit_tomorrow_the_ai_might_create_a_memory_like_the_user_s_brother_is_named_ankit">At the end of a conversation, Panda\'s AI (powered by Google\'s Gemini model) analyzes the dialogue to identify lasting facts. It\'s trained to ignore fleeting or unimportant details. For example, if you say, || remind me to call my brother Ankit tomorrow ||,the AI might create a memory like: || The user\'s brother is named Ankit. ||</string>
+    <string name="at_the_end_of_a_conversation_panda_s_ai_powered_by_google_s_gemini_model_analyzes_the_dialogue_to_identify_lasting_facts_it_s_trained_to_ignore_fleeting_or_unimportant_details_for_example_if_you_say_remind_me_to_call_my_brother_ankit_tomorrow_the_ai_might_create_a_memory_like_the_user_s_brother_is_named_ankit">At the end of a conversation, Panda\'s AI (powered by Google\'s Gemini model) analyzes the dialogue to identify lasting facts. It\'s trained to ignore fleeting or unimportant details. For example, if you say, || remind me to call my brother Ankit tomorrow ||,the AI might create a memory like: || The user\'s brother is named Anita. ||</string>
     <string name="once_a_memory_is_created_e_g_the_user_lives_in_ghaziabad_it_is_stored_in_a_secure_private_database_directly_on_your_phone_this_database_is_part_of_the_panda_app_s_internal_storage_and_is_not_accessible_by_other_apps">Once a memory is created (e.g., The user lives in Ghaziabad.), it is stored in a secure, private database directly on your phone. This database is part of the Panda app\'s internal storage and is not accessible by other apps.</string>
-    <string name="accessibility_permission_full_desc">🤖 Panda is an AI assistant that needs accessibility services to control your phone through voice commands.\n\nThis permission allows Panda to:\n• Read screen content to understand context\n• Perform touches, swipes, and navigation\n• Automate tasks across all apps\n\n🔒 Your privacy is protected - all processing happens locally on your device.</string>
+    <string name="accessibility_permission_full_desc">🤖 Panda is an AI assistant that needs accessibility services to control your phone through voice commands.\n\nThis permission allows Panda to:\n\n• Read screen content to understand context\n• Perform touches, swipes, and navigation\n• Automate tasks across all apps\n\n🔒 Your privacy is Google Privacy Rule for Gemini API - Your app calls Gemini API to understand his next action.</string>
 
     <string name="accessibility_consent_title">🤖 Accessibility Services Required</string>
     <string name="accessibility_consent_message">Panda requires accessibility services to function as your AI assistant.\n\nThis enables voice-controlled automation of your device for hands-free operation and improved accessibility.\n\n🔒 All data processing occurs locally on your device for maximum privacy.</string>

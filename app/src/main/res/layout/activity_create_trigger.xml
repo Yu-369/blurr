@@ -103,6 +103,40 @@
                     tools:listitem="@layout/item_app" />
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/chargingStateOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/PermissionHeading"
+                    android:text="Trigger When" />
+
+                <RadioGroup
+                    android:id="@+id/chargingStatusRadioGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <RadioButton
+                        android:id="@+id/radioConnected"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Power Connected"
+                        android:textColor="@color/white"
+                        android:checked="true"/>
+
+                    <RadioButton
+                        android:id="@+id/radioDisconnected"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Power Disconnected"
+                        android:textColor="@color/white"/>
+                </RadioGroup>
+            </LinearLayout>
+
 
             <Button
                 android:id="@+id/saveTriggerButton"

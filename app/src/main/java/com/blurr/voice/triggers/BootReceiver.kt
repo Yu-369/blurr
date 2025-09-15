@@ -18,6 +18,11 @@ class BootReceiver : BroadcastReceiver() {
             val triggerManager = TriggerManager.getInstance(context)
 
             // It's good practice to do this work off the main thread
+            // Start the TriggerMonitoringService
+            val serviceIntent = Intent(context, TriggerMonitoringService::class.java)
+            context.startService(serviceIntent)
+            Log.d(TAG, "Started TriggerMonitoringService on boot.")
+
             CoroutineScope(Dispatchers.IO).launch {
                 val triggers = triggerManager.getTriggers()
                 val scheduledTriggers = triggers.filter { it.isEnabled && it.type == TriggerType.SCHEDULED_TIME }

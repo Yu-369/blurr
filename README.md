@@ -63,7 +63,17 @@ GEMINI_API_KEYS=
     * Add your API keys to this file in the following format:
         ```properties
          sdk.dir=
-         GEMINI_API_KEYS=
+         GEMINI_API_KEYS=<add 2-3 keys working here>
+         TAVILY_API=<not-req><add randome string>
+         MEM0_API=<not-req><add randome string>
+         PICOVOICE_ACCESS_KEY=<not-req><add randome string>
+         GOOGLE_TTS_API_KEY=<req> (issue will fix this)
+         GCLOUD_GATEWAY_PICOVOICE_KEY=<not needed><add randome string>
+         GCLOUD_GATEWAY_URL=<not needed><add randome string>
+         GCLOUD_PROXY_URL=<not needed><add randome string>
+         GCLOUD_PROXY_URL_KEY=<not needed><add randome string>
+         REVENUE_CAT_PUBLIC_URL=<not needed> <add randome string>
+         REVENUECAT_API_KEY=<not needed> <add randome string>
         ```
 
 3.  **Build & Run:**

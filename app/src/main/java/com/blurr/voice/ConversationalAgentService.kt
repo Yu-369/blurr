@@ -21,11 +21,6 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.blurr.voice.agent.v1.AgentConfig
-import com.blurr.voice.agent.v1.ClarificationAgent
-import com.blurr.voice.agent.v1.InfoPool
-import com.blurr.voice.agent.v1.VisionHelper
-import com.blurr.voice.agent.v1.VisionMode
 import com.blurr.voice.api.Eyes
 //import com.blurr.voice.services.AgentTaskService
 import com.blurr.voice.utilities.SpeechCoordinator
@@ -35,6 +30,7 @@ import android.view.Gravity
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.graphics.toColorInt
+import com.blurr.voice.agents.ClarificationAgent
 import com.blurr.voice.utilities.TTSManager
 import com.blurr.voice.utilities.addResponse
 import com.blurr.voice.utilities.getReasoningModelApiResponse
@@ -89,7 +85,7 @@ class ConversationalAgentService : Service() {
     private var sttErrorAttempts = 0
     private val maxSttErrorAttempts = 2
 
-     private val clarificationAgent = ClarificationAgent()
+    private val clarificationAgent = ClarificationAgent()
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
     private val memoryManager by lazy { MemoryManager.getInstance(this) }
@@ -665,42 +661,28 @@ class ConversationalAgentService : Service() {
 //            ""
 //        }
 //    }
-    // --- NEW: Added the clarification check logic directly into the service ---
     private suspend fun checkIfClarificationNeeded(instruction: String): Pair<Boolean, List<String>> {
-        try {
-            val tempInfoPool = InfoPool(instruction = instruction)
-            // Use 'this' as the context for the service
-            val config = AgentConfig(visionMode = VisionMode.XML, apiKey = "", context = this)
+        Log.d("ConvAgent", "Checking for clarification on instruction: '$instruction'")
 
-            Log.d("ConvAgent", "Checking clarification with conversation history (${conversationHistory.size} messages)")
-            val prompt = clarificationAgent.getPromptWithHistory(tempInfoPool, config, conversationHistory)
-            val chat = clarificationAgent.initChat()
-            val combined = VisionHelper.createChatResponse("user", prompt, chat, config)
-            val response = withContext(Dispatchers.IO) {
-                getReasoningModelApiResponse(combined)
-            }
+        // Use the clarificationAgent instance to analyze the instruction.
+        // The agent encapsulates all the logic for API calls and parsing.
+        val result = clarificationAgent.analyze(
+            instruction = instruction,
+            conversationHistory = conversationHistory,
+            context = this@ConversationalAgentService // Pass the service context
+        )
 
-            val parsedResult = clarificationAgent.parseResponse(response.toString())
-            val status = parsedResult["status"] ?: "CLEAR"
-            val questionsText = parsedResult["questions"] ?: ""
+        // Determine the final result based on the agent's analysis.
+        val needsClarification = result.status == "NEEDS_CLARIFICATION" && result.questions.isNotEmpty()
 
-            Log.d("ConvAgent", "Clarification check result: status=$status, questions=${questionsText.take(100)}...")
-
-            return if (status == "NEEDS_CLARIFICATION" && questionsText.isNotEmpty()) {
-                val questions = clarificationAgent.parseQuestions(questionsText)
-                Log.d("ConvAgent", "Clarification needed. Questions: $questions")
-                Pair(true, questions)
-            } else {
-                Log.d("ConvAgent", "No clarification needed or no questions generated")
-                Pair(false, emptyList())
-            }
-        } catch (e: Exception) {
-            Log.e("ConvAgent", "Error checking for clarification", e)
-            return Pair(false, emptyList())
+        if (needsClarification) {
+            Log.d("ConvAgent", "Clarification is needed. Questions: ${result.questions}")
+        } else {
+            Log.d("ConvAgent", "Instruction is clear. Status: ${result.status}")
         }
+
+        return Pair(needsClarification, result.questions)
     }
-
-
     private fun initializeConversation() {
         val memoryContextSection = if (MEMORY_ENABLED) {
             """

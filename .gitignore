@@ -22,4 +22,3 @@ app/google-services.json
 *.class
 *.kotlin_module
 META-INF/
-com/

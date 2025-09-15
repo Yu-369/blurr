@@ -60,6 +60,10 @@ class TriggerAdapter(
                 TriggerType.NOTIFICATION -> {
                     timeTextView.text = "On notification from ${trigger.appName}"
                 }
+
+                TriggerType.CHARGING_STATE -> {
+                    timeTextView.text = "battery state"
+                }
             }
 
             enabledSwitch.setOnCheckedChangeListener(null) // Avoid triggering listener during bind

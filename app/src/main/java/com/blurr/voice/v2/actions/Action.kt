@@ -1,7 +1,5 @@
 package com.blurr.voice.v2.actions
 
-import com.blurr.voice.agent.v1.AgentConfig
-import com.blurr.voice.agent.v1.InfoPool
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor

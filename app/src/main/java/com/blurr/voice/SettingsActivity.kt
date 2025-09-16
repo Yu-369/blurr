@@ -37,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var ttsVoicePicker: NumberPicker
     private lateinit var backButton: Button
     private lateinit var permissionsInfoButton: TextView
+    private lateinit var batteryOptimizationHelpButton: TextView
     private lateinit var editUserName: android.widget.EditText
     private lateinit var editUserEmail: android.widget.EditText
     private lateinit var editWakeWordKey: android.widget.EditText
@@ -100,6 +101,7 @@ class SettingsActivity : AppCompatActivity() {
         ttsVoicePicker = findViewById(R.id.ttsVoicePicker)
         backButton = findViewById(R.id.id_backButtonSettings)
         permissionsInfoButton = findViewById(R.id.permissionsInfoButton)
+        batteryOptimizationHelpButton = findViewById(R.id.batteryOptimizationHelpButton)
       
         editWakeWordKey = findViewById(R.id.editWakeWordKey)
         wakeWordButton = findViewById(R.id.wakeWordButton) // NEW: Initialize wake word button
@@ -133,6 +135,9 @@ class SettingsActivity : AppCompatActivity() {
         permissionsInfoButton.setOnClickListener {
             val intent = Intent(this, PermissionsActivity::class.java)
             startActivity(intent)
+        }
+        batteryOptimizationHelpButton.setOnClickListener {
+            showBatteryOptimizationDialog()
         }
         wakeWordButton.setOnClickListener {
             val keyManager = PicovoiceKeyManager(this)
@@ -294,6 +299,36 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateWakeWordButtonState() {
         wakeWordManager.updateButtonState(wakeWordButton)
+    }
+
+    private fun showBatteryOptimizationDialog() {
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.battery_optimization_title))
+            .setMessage(getString(R.string.battery_optimization_message))
+            .setPositiveButton(getString(R.string.learn_how)) { _, _ ->
+                // Open the Tasker FAQ URL
+                val url = "https://tasker.joaoapps.com/userguide/en/faqs/faq-problem.html#00"
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.data = Uri.parse(url)
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Could not open link. No browser found.", Toast.LENGTH_LONG).show()
+                    Log.e("SettingsActivity", "Failed to open battery optimization link", e)
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+        
+        // Set button text colors to white
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+            androidx.core.content.ContextCompat.getColor(this, R.color.white)
+        )
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(
+            androidx.core.content.ContextCompat.getColor(this, R.color.white)
+        )
     }
 
 }

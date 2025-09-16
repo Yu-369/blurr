@@ -1,4 +1,4 @@
-package com.blurr.voice.api
+package com.blurr.voice.utilities
 
 import com.blurr.voice.BuildConfig
 import java.util.concurrent.atomic.AtomicInteger

@@ -2,10 +2,10 @@ package com.blurr.voice.api
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Base64
 import android.util.Log
 import com.blurr.voice.BuildConfig
 import com.blurr.voice.MyApplication
+import com.blurr.voice.utilities.ApiKeyManager
 import com.google.ai.client.generativeai.type.ImagePart
 import com.google.ai.client.generativeai.type.TextPart
 import com.google.firebase.Firebase
@@ -20,10 +20,8 @@ import com.blurr.voice.utilities.NetworkConnectivityManager
 import com.blurr.voice.utilities.NetworkNotifier
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileWriter
-import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit

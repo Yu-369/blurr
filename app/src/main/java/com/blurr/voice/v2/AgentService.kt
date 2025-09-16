@@ -12,7 +12,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import com.blurr.voice.api.ApiKeyManager
+import com.blurr.voice.utilities.ApiKeyManager
 import com.blurr.voice.api.Eyes
 import com.blurr.voice.api.Finger
 import com.blurr.voice.utilities.VisualFeedbackManager

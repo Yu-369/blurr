@@ -2,7 +2,7 @@ package com.blurr.voice.v2.llm
 
 import android.util.Log
 import com.blurr.voice.BuildConfig
-import com.blurr.voice.api.ApiKeyManager
+import com.blurr.voice.utilities.ApiKeyManager
 import com.blurr.voice.v2.AgentOutput
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.Content

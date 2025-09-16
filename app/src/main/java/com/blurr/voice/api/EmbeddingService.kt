@@ -9,8 +9,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
-import com.blurr.voice.MyApplication
-import com.blurr.voice.utilities.NetworkConnectivityManager
+import com.blurr.voice.utilities.ApiKeyManager
 import com.blurr.voice.utilities.NetworkNotifier
 
 /**

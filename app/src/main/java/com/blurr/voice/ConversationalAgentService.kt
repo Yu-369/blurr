@@ -10,7 +10,6 @@ import android.content.pm.PackageManager
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.animation.ValueAnimator
-import com.blurr.voice.api.ApiKeyManager
 import android.graphics.Typeface
 import android.graphics.drawable.LayerDrawable
 import android.os.Build
@@ -35,12 +34,10 @@ import com.blurr.voice.utilities.TTSManager
 import com.blurr.voice.utilities.addResponse
 import com.blurr.voice.utilities.getReasoningModelApiResponse
 import com.blurr.voice.data.MemoryManager
-import com.blurr.voice.data.MemoryExtractor
 import com.blurr.voice.utilities.FreemiumManager
 import com.blurr.voice.utilities.UserProfileManager
 import com.blurr.voice.utilities.VisualFeedbackManager
 import com.blurr.voice.v2.AgentService
-//import com.blurr.voice.v2.llm.GeminiApi
 import com.google.ai.client.generativeai.type.TextPart
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -56,7 +53,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 data class ModelDecision(
@@ -79,7 +75,6 @@ class ConversationalAgentService : Service() {
     private var isTextModeActive = false
     private val freemiumManager by lazy { FreemiumManager() }
 
-    // Add these at the top of your ConversationalAgentService class
     private var clarificationAttempts = 0
     private val maxClarificationAttempts = 1
     private var sttErrorAttempts = 0
@@ -135,8 +130,6 @@ class ConversationalAgentService : Service() {
 
     @RequiresApi(Build.VERSION_CODES.R)
     private fun showInputBoxIfNeeded() {
-        // This function ensures the input box is always configured correctly
-        // whether it's the first time or a subsequent turn in text mode.
         visualFeedbackManager.showInputBox(
             onActivated = {
                 // This is called when the user taps the EditText

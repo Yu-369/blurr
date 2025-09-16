@@ -24,6 +24,11 @@ class PandaNotificationListenerService : NotificationListenerService() {
         val packageName = sbn.packageName
         Log.d(TAG, "Notification posted from package: $packageName")
 
+        if (packageName == this.packageName) {
+            Log.d(TAG, "Ignoring notification from own package.")
+            return
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             val notificationTriggers = triggerManager.getTriggers()
                 .filter { it.type == TriggerType.NOTIFICATION && it.isEnabled }

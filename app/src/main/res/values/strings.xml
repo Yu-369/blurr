@@ -116,6 +116,6 @@
     <string name="get_your_free_picovoice_api_key_you_can_paste_it_here">Get your free Picovoice API Key, you can paste it here.</string>
 
     <string name="microphone_permission_not_granted">Microphone permission not granted</string>
-    <string name="accessibility_permission_needed_for_task">Hey, this permission is needed to execute any task.</string>
+    <string name="accessibility_permission_needed_for_task">Hey, accessibility permission is needed to execute any task. I know you might have doubt giving this permission to me, but my code is open source, so can always check it out if you have doubts.</string>
 
 </resources>

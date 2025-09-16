@@ -175,9 +175,13 @@ class ConversationalAgentService : Service() {
         try {
             startForeground(NOTIFICATION_ID, createNotification())
         } catch (e: SecurityException) {
+            serviceScope.launch {
+                speechCoordinator.speakText("Hello, please give microphone permission or some other type of permission you have not given me! My code is open source, so you can check that out if you have any doubts.")
+                delay(2000) // Wait for TTS to complete before closing service
+                stopSelf()
+            }
             Log.e("ConvAgent", "Failed to start foreground service: ${e.message}")
             Toast.makeText(this, "Cannot start voice assistant - permission missing", Toast.LENGTH_LONG).show()
-            stopSelf()
             return START_NOT_STICKY
         }
 
@@ -503,11 +507,13 @@ class ConversationalAgentService : Service() {
                             firebaseAnalytics.logEvent("task_rejected_agent_busy", null)
                             val busyMessage = "I'm already working on '${AgentService.currentTask}'. Please let me finish that first, or you can ask me to stop it."
                             speakAndThenListen(busyMessage)
+                            conversationHistory = addResponse("model", busyMessage, conversationHistory)
                             return@launch
                         }
 
                         if (!servicePermissionManager.isAccessibilityServiceEnabled()) {
                             speakAndThenListen(getString(R.string.accessibility_permission_needed_for_task))
+                            conversationHistory = addResponse("model", R.string.accessibility_permission_needed_for_task.toString(), conversationHistory)
                             return@launch
                         }
 
@@ -717,8 +723,9 @@ class ConversationalAgentService : Service() {
             2. If you know the user's name from the memories, refer to them by their name to make the conversation more personal and friendly.
             3. Use the current screen context to better understand what the user is looking at and provide more relevant responses.
             4. If the user asks about something on the screen, you can reference the screen content directly.
-            5. When the user ask to sing
-
+            5. When the user ask to sing, shout or produce any sound, just generate text, we will sing it for you.
+            6. Your code is opensource so you can tell tell that to user. repo is ayush0chaudhary/blurr
+            
             $memoryContextSection
         
             Analyze the user's request and respond ONLY with a single, valid JSON object.

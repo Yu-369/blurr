@@ -172,7 +172,7 @@ class CreateTriggerActivity : AppCompatActivity() {
     private fun loadApps() {
         lifecycleScope.launch(Dispatchers.IO) {
             val pm = packageManager
-            val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+            val appsList = pm.getInstalledApplications(PackageManager.GET_META_DATA)
                 .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
                 .map {
                     AppInfo(
@@ -183,14 +183,24 @@ class CreateTriggerActivity : AppCompatActivity() {
                 }
                 .sortedBy { it.appName }
 
+            val allAppsOption = AppInfo(
+                appName = "All Applications",
+                packageName = "*",
+                icon = getDrawable(android.R.drawable.ic_menu_gallery) // Using a generic icon
+            )
+
+            val finalList = mutableListOf(allAppsOption)
+            finalList.addAll(appsList)
+
+
             withContext(Dispatchers.Main) {
-                appAdapter.updateApps(apps)
+                appAdapter.updateApps(finalList)
                 if (existingTrigger != null && existingTrigger!!.type == TriggerType.NOTIFICATION) {
-                    val position = apps.indexOfFirst { it.packageName == existingTrigger!!.packageName }
+                    val position = finalList.indexOfFirst { it.packageName == existingTrigger!!.packageName }
                     if (position != -1) {
                         appAdapter.setSelectedPosition(position)
                         appsRecyclerView.scrollToPosition(position)
-                        selectedApp = apps[position]
+                        selectedApp = finalList[position]
                     }
                 }
             }

@@ -28,7 +28,13 @@ class PandaNotificationListenerService : NotificationListenerService() {
             val notificationTriggers = triggerManager.getTriggers()
                 .filter { it.type == TriggerType.NOTIFICATION && it.isEnabled }
 
-            val matchingTrigger = notificationTriggers.find { it.packageName == packageName }
+            // First, check for the "All Applications" trigger
+            var matchingTrigger = notificationTriggers.find { it.packageName == "*" }
+
+            // If no "All Applications" trigger is found, check for a specific app trigger
+            if (matchingTrigger == null) {
+                matchingTrigger = notificationTriggers.find { it.packageName == packageName }
+            }
 
             if (matchingTrigger != null) {
                 val extras = sbn.notification.extras

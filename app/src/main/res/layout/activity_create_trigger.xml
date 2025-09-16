@@ -91,6 +91,13 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
+                <CheckBox
+                    android:id="@+id/selectAllAppsCheckbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All Applications"
+                    android:textColor="@color/white"/>
+
                 <TextView
                     style="@style/PermissionHeading"
                     android:text="Select App" />

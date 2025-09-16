@@ -14,9 +14,9 @@ object VoicePreferenceManager {
         val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
         // Ensure this default also matches your intended default (CHIRP_PUCK)
-        val selectedVoiceName = sharedPreferences.getString(KEY_SELECTED_VOICE, TTSVoice.CHIRP_PUCK.name)
+        val selectedVoiceName = sharedPreferences.getString(KEY_SELECTED_VOICE, TTSVoice.CHIRP_LAOMEDEIA.name)
 
-        return TTSVoice.valueOf(selectedVoiceName ?: TTSVoice.CHIRP_PUCK.name)
+        return TTSVoice.valueOf(selectedVoiceName ?: TTSVoice.CHIRP_LAOMEDEIA.name)
     }
 
     fun saveSelectedVoice(context: Context, voice: TTSVoice) {

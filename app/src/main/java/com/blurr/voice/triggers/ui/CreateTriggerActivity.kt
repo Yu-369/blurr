@@ -18,6 +18,7 @@ import com.blurr.voice.R
 import com.blurr.voice.triggers.Trigger
 import com.blurr.voice.triggers.TriggerManager
 import com.blurr.voice.triggers.TriggerType
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,6 +38,7 @@ class CreateTriggerActivity : AppCompatActivity() {
 
     private var selectedTriggerType = TriggerType.SCHEDULED_TIME
     private var selectedApp: AppInfo? = null
+    private var existingTrigger: Trigger? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,18 +67,37 @@ class CreateTriggerActivity : AppCompatActivity() {
 //            }
 //        }
 
-        // Set default checked state for all day chips
-        for (i in 0 until dayOfWeekChipGroup.childCount) {
-            (dayOfWeekChipGroup.getChildAt(i) as com.google.android.material.chip.Chip).isChecked = true
+        val saveButton = findViewById<Button>(R.id.saveTriggerButton)
+
+        val triggerId = intent.getStringExtra("EXTRA_TRIGGER_ID")
+        if (triggerId != null) {
+            // Edit mode
+            existingTrigger = triggerManager.getTriggers().find { it.id == triggerId }
+            if (existingTrigger != null) {
+                selectedTriggerType = existingTrigger!!.type
+                populateUiWithTriggerData(existingTrigger!!)
+                saveButton.text = "Update Trigger"
+            } else {
+                // Trigger not found, something is wrong.
+                Toast.makeText(this, "Trigger not found.", Toast.LENGTH_SHORT).show()
+                finish()
+                return // return from onCreate
+            }
+        } else {
+            // Create mode
+            selectedTriggerType = intent.getSerializableExtra("EXTRA_TRIGGER_TYPE") as TriggerType
+            // Set default checked state for all day chips
+            for (i in 0 until dayOfWeekChipGroup.childCount) {
+                (dayOfWeekChipGroup.getChildAt(i) as com.google.android.material.chip.Chip).isChecked = true
+            }
         }
 
-        selectedTriggerType = intent.getSerializableExtra("EXTRA_TRIGGER_TYPE") as TriggerType
+
         setupInitialView()
 
         setupRecyclerView()
         loadApps()
 
-        val saveButton = findViewById<Button>(R.id.saveTriggerButton)
         saveButton.setOnClickListener {
             saveTrigger()
         }
@@ -85,6 +106,39 @@ class CreateTriggerActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
+    }
+
+    private fun populateUiWithTriggerData(trigger: Trigger) {
+        instructionEditText.setText(trigger.instruction)
+
+        when (trigger.type) {
+            TriggerType.SCHEDULED_TIME -> {
+                timePicker.hour = trigger.hour ?: 0
+                timePicker.minute = trigger.minute ?: 0
+                // Clear all chips first
+                for (i in 0 until dayOfWeekChipGroup.childCount) {
+                    (dayOfWeekChipGroup.getChildAt(i) as com.google.android.material.chip.Chip).isChecked = false
+                }
+                // Then check the ones from the trigger
+                trigger.daysOfWeek.forEach { day ->
+                    (dayOfWeekChipGroup.getChildAt(day - 1) as com.google.android.material.chip.Chip).isChecked = true
+                }
+            }
+            TriggerType.NOTIFICATION -> {
+                selectedApp = AppInfo(
+                    appName = trigger.appName ?: "",
+                    packageName = trigger.packageName ?: ""
+                )
+            }
+            TriggerType.CHARGING_STATE -> {
+                val radioGroup = findViewById<RadioGroup>(R.id.chargingStatusRadioGroup)
+                if (trigger.chargingStatus == "Connected") {
+                    radioGroup.check(R.id.radioConnected)
+                } else {
+                    radioGroup.check(R.id.radioDisconnected)
+                }
+            }
+        }
     }
 
     private fun setupInitialView() {
@@ -130,10 +184,15 @@ class CreateTriggerActivity : AppCompatActivity() {
                 .sortedBy { it.appName }
 
             withContext(Dispatchers.Main) {
-                appAdapter = AppAdapter(apps) { app ->
-                    selectedApp = app
+                appAdapter.updateApps(apps)
+                if (existingTrigger != null && existingTrigger!!.type == TriggerType.NOTIFICATION) {
+                    val position = apps.indexOfFirst { it.packageName == existingTrigger!!.packageName }
+                    if (position != -1) {
+                        appAdapter.setSelectedPosition(position)
+                        appsRecyclerView.scrollToPosition(position)
+                        selectedApp = apps[position]
+                    }
                 }
-                appsRecyclerView.adapter = appAdapter
             }
         }
     }
@@ -145,7 +204,8 @@ class CreateTriggerActivity : AppCompatActivity() {
             return
         }
 
-        val trigger = when (selectedTriggerType) {
+        val trigger: Trigger
+        when (selectedTriggerType) {
             TriggerType.SCHEDULED_TIME -> {
                 if (!com.blurr.voice.triggers.PermissionUtils.canScheduleExactAlarms(this)) {
                     showExactAlarmPermissionDialog()
@@ -156,12 +216,14 @@ class CreateTriggerActivity : AppCompatActivity() {
                     Toast.makeText(this, "Please select at least one day", Toast.LENGTH_SHORT).show()
                     return
                 }
-                Trigger(
+                trigger = Trigger(
+                    id = existingTrigger?.id ?: UUID.randomUUID().toString(),
                     type = TriggerType.SCHEDULED_TIME,
                     hour = timePicker.hour,
                     minute = timePicker.minute,
                     instruction = instruction,
-                    daysOfWeek = selectedDays
+                    daysOfWeek = selectedDays,
+                    isEnabled = existingTrigger?.isEnabled ?: true
                 )
             }
             TriggerType.NOTIFICATION -> {
@@ -169,11 +231,13 @@ class CreateTriggerActivity : AppCompatActivity() {
                     Toast.makeText(this, "Please select an app", Toast.LENGTH_SHORT).show()
                     return
                 }
-                Trigger(
+                trigger = Trigger(
+                    id = existingTrigger?.id ?: UUID.randomUUID().toString(),
                     type = TriggerType.NOTIFICATION,
                     packageName = selectedApp!!.packageName,
                     appName = selectedApp!!.appName,
-                    instruction = instruction
+                    instruction = instruction,
+                    isEnabled = existingTrigger?.isEnabled ?: true
                 )
             }
             TriggerType.CHARGING_STATE -> {
@@ -183,16 +247,23 @@ class CreateTriggerActivity : AppCompatActivity() {
                 } else {
                     "Disconnected"
                 }
-                Trigger(
+                trigger = Trigger(
+                    id = existingTrigger?.id ?: UUID.randomUUID().toString(),
                     type = TriggerType.CHARGING_STATE,
                     chargingStatus = selectedStatus,
-                    instruction = instruction
+                    instruction = instruction,
+                    isEnabled = existingTrigger?.isEnabled ?: true
                 )
             }
         }
 
-        triggerManager.addTrigger(trigger)
-        Toast.makeText(this, "Trigger saved!", Toast.LENGTH_SHORT).show()
+        if (existingTrigger != null) {
+            triggerManager.updateTrigger(trigger)
+            Toast.makeText(this, "Trigger updated!", Toast.LENGTH_SHORT).show()
+        } else {
+            triggerManager.addTrigger(trigger)
+            Toast.makeText(this, "Trigger saved!", Toast.LENGTH_SHORT).show()
+        }
         finish()
     }
 

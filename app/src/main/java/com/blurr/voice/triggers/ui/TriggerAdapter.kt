@@ -14,7 +14,8 @@ import java.util.Locale
 class TriggerAdapter(
     private val triggers: MutableList<Trigger>,
     private val onCheckedChange: (Trigger, Boolean) -> Unit,
-    private val onDeleteClick: (Trigger) -> Unit
+    private val onDeleteClick: (Trigger) -> Unit,
+    private val onEditClick: (Trigger) -> Unit
 ) : RecyclerView.Adapter<TriggerAdapter.TriggerViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TriggerViewHolder {
@@ -40,12 +41,17 @@ class TriggerAdapter(
         private val timeTextView: TextView = itemView.findViewById(R.id.triggerTimeTextView)
         private val enabledSwitch: SwitchCompat = itemView.findViewById(R.id.triggerEnabledSwitch)
         private val deleteButton: android.widget.ImageButton = itemView.findViewById(R.id.deleteTriggerButton)
+        private val editButton: android.widget.ImageButton = itemView.findViewById(R.id.editTriggerButton)
 
         fun bind(trigger: Trigger) {
             instructionTextView.text = trigger.instruction
 
             deleteButton.setOnClickListener {
                 onDeleteClick(trigger)
+            }
+
+            editButton.setOnClickListener {
+                onEditClick(trigger)
             }
 
             when (trigger.type) {

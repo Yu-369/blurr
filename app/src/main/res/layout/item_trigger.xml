@@ -44,9 +44,21 @@
             android:id="@+id/triggerEnabledSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintEnd_toStartOf="@+id/deleteTriggerButton"
+            app:layout_constraintEnd_toStartOf="@+id/editTriggerButton"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
+
+        <ImageButton
+            android:id="@+id/editTriggerButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Edit trigger"
+            android:src="@android:drawable/ic_menu_edit"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/deleteTriggerButton"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/white" />
 
         <ImageButton
             android:id="@+id/deleteTriggerButton"

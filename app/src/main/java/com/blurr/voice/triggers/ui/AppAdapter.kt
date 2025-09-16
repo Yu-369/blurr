@@ -4,10 +4,14 @@ import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
+import android.widget.Filter
+import android.widget.Filterable
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.blurr.voice.R
+import java.util.Locale
 
 data class AppInfo(
     val appName: String,
@@ -17,20 +21,22 @@ data class AppInfo(
 
 class AppAdapter(
     private var apps: List<AppInfo>,
-    private val onClick: (AppInfo) -> Unit
-) : RecyclerView.Adapter<AppAdapter.AppViewHolder>() {
+    private val onSelectionChanged: (List<AppInfo>) -> Unit
+) : RecyclerView.Adapter<AppAdapter.AppViewHolder>(), Filterable {
 
-    private var selectedPosition = RecyclerView.NO_POSITION
+    private var filteredApps: List<AppInfo> = apps
+    private val selectedApps = mutableSetOf<AppInfo>()
 
     fun updateApps(newApps: List<AppInfo>) {
         this.apps = newApps
+        this.filteredApps = newApps
         notifyDataSetChanged()
     }
 
-    fun setSelectedPosition(position: Int) {
-        notifyItemChanged(selectedPosition)
-        selectedPosition = position
-        notifyItemChanged(selectedPosition)
+    fun setSelectedApps(apps: List<AppInfo>) {
+        selectedApps.clear()
+        selectedApps.addAll(apps)
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
@@ -39,26 +45,54 @@ class AppAdapter(
     }
 
     override fun onBindViewHolder(holder: AppViewHolder, position: Int) {
-        val app = apps[position]
-        holder.bind(app, position == selectedPosition)
+        val app = filteredApps[position]
+        holder.bind(app, selectedApps.contains(app))
     }
 
-    override fun getItemCount(): Int = apps.size
+    override fun getItemCount(): Int = filteredApps.size
+
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                val charString = constraint?.toString()?.lowercase(Locale.getDefault()) ?: ""
+                val filteredList = if (charString.isEmpty()) {
+                    apps
+                } else {
+                    apps.filter {
+                        it.appName.lowercase(Locale.getDefault()).contains(charString)
+                    }
+                }
+                val filterResults = FilterResults()
+                filterResults.values = filteredList
+                return filterResults
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                filteredApps = results?.values as? List<AppInfo> ?: emptyList()
+                notifyDataSetChanged()
+            }
+        }
+    }
 
     inner class AppViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val appIconImageView: ImageView = itemView.findViewById(R.id.appIconImageView)
         private val appNameTextView: TextView = itemView.findViewById(R.id.appNameTextView)
+        private val appCheckBox: CheckBox = itemView.findViewById(R.id.appCheckBox)
 
         fun bind(app: AppInfo, isSelected: Boolean) {
             appIconImageView.setImageDrawable(app.icon)
             appNameTextView.text = app.appName
-            itemView.setBackgroundResource(if (isSelected) R.color.purple_200 else android.R.color.transparent)
+            appCheckBox.isChecked = isSelected
 
             itemView.setOnClickListener {
-                notifyItemChanged(selectedPosition)
-                selectedPosition = bindingAdapterPosition
-                notifyItemChanged(selectedPosition)
-                onClick(app)
+                if (selectedApps.contains(app)) {
+                    selectedApps.remove(app)
+                } else {
+                    selectedApps.add(app)
+                }
+                notifyItemChanged(bindingAdapterPosition)
+                onSelectionChanged(selectedApps.toList())
             }
         }
     }

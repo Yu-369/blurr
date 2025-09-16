@@ -2,6 +2,8 @@ package com.blurr.voice.triggers.ui
 
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -28,6 +30,7 @@ class CreateTriggerActivity : AppCompatActivity() {
 
     private lateinit var triggerManager: TriggerManager
     private lateinit var instructionEditText: EditText
+    private lateinit var searchEditText: EditText
     private lateinit var scheduledTimeOptions: LinearLayout
     private lateinit var notificationOptions: LinearLayout
     private lateinit var chargingStateOptions: LinearLayout
@@ -39,7 +42,7 @@ class CreateTriggerActivity : AppCompatActivity() {
     private lateinit var selectAllAppsCheckbox: CheckBox
 
     private var selectedTriggerType = TriggerType.SCHEDULED_TIME
-    private var selectedApp: AppInfo? = null
+    private var selectedApps = listOf<AppInfo>()
     private var existingTrigger: Trigger? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +55,7 @@ class CreateTriggerActivity : AppCompatActivity() {
 
         triggerManager = TriggerManager.getInstance(this)
         instructionEditText = findViewById(R.id.instructionEditText)
+        searchEditText = findViewById(R.id.searchEditText)
         scheduledTimeOptions = findViewById(R.id.scheduledTimeOptions)
         notificationOptions = findViewById(R.id.notificationOptions)
         chargingStateOptions = findViewById(R.id.chargingStateOptions)
@@ -74,16 +78,19 @@ class CreateTriggerActivity : AppCompatActivity() {
         val triggerId = intent.getStringExtra("EXTRA_TRIGGER_ID")
         if (triggerId != null) {
             // Edit mode
-            existingTrigger = triggerManager.getTriggers().find { it.id == triggerId }
-            if (existingTrigger != null) {
-                selectedTriggerType = existingTrigger!!.type
-                populateUiWithTriggerData(existingTrigger!!)
-                saveButton.text = "Update Trigger"
-            } else {
-                // Trigger not found, something is wrong.
-                Toast.makeText(this, "Trigger not found.", Toast.LENGTH_SHORT).show()
-                finish()
-                return // return from onCreate
+            lifecycleScope.launch {
+                existingTrigger = withContext(Dispatchers.IO) {
+                    triggerManager.getTriggers().find { it.id == triggerId }
+                }
+                if (existingTrigger != null) {
+                    selectedTriggerType = existingTrigger!!.type
+                    populateUiWithTriggerData(existingTrigger!!)
+                    saveButton.text = "Update Trigger"
+                } else {
+                    // Trigger not found, something is wrong.
+                    Toast.makeText(this@CreateTriggerActivity, "Trigger not found.", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
             }
         } else {
             // Create mode
@@ -100,13 +107,21 @@ class CreateTriggerActivity : AppCompatActivity() {
         setupRecyclerView()
         loadApps()
 
+        searchEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                appAdapter.filter.filter(s)
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         selectAllAppsCheckbox = findViewById(R.id.selectAllAppsCheckbox)
         selectAllAppsCheckbox.setOnCheckedChangeListener { _, isChecked ->
             appsRecyclerView.isEnabled = !isChecked
             appsRecyclerView.alpha = if (isChecked) 0.5f else 1.0f
             if (isChecked) {
-                appAdapter.setSelectedPosition(RecyclerView.NO_POSITION)
-                selectedApp = null
+                appAdapter.setSelectedApps(emptyList())
+                selectedApps = emptyList()
             }
         }
 
@@ -156,10 +171,7 @@ class CreateTriggerActivity : AppCompatActivity() {
                 if (trigger.packageName == "*") {
                     selectAllAppsCheckbox.isChecked = true
                 } else {
-                    selectedApp = AppInfo(
-                        appName = trigger.appName ?: "",
-                        packageName = trigger.packageName ?: ""
-                    )
+                    // This will be handled in loadApps now
                 }
             }
             TriggerType.CHARGING_STATE -> {
@@ -195,8 +207,8 @@ class CreateTriggerActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         appsRecyclerView.layoutManager = LinearLayoutManager(this)
-        appAdapter = AppAdapter(emptyList()) { app ->
-            selectedApp = app
+        appAdapter = AppAdapter(emptyList()) { apps ->
+            selectedApps = apps
         }
         appsRecyclerView.adapter = appAdapter
     }
@@ -218,12 +230,10 @@ class CreateTriggerActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 appAdapter.updateApps(apps)
                 if (existingTrigger != null && existingTrigger!!.type == TriggerType.NOTIFICATION) {
-                    val position = apps.indexOfFirst { it.packageName == existingTrigger!!.packageName }
-                    if (position != -1) {
-                        appAdapter.setSelectedPosition(position)
-                        appsRecyclerView.scrollToPosition(position)
-                        selectedApp = apps[position]
-                    }
+                    val selectedPackageNames = existingTrigger!!.packageName?.split(",") ?: emptyList()
+                    val preSelectedApps = apps.filter { it.packageName in selectedPackageNames }
+                    appAdapter.setSelectedApps(preSelectedApps)
+                    selectedApps = preSelectedApps
                 }
             }
         }
@@ -265,12 +275,12 @@ class CreateTriggerActivity : AppCompatActivity() {
                     packageName = "*"
                     appName = "All Applications"
                 } else {
-                    if (selectedApp == null) {
-                        Toast.makeText(this, "Please select an app", Toast.LENGTH_SHORT).show()
+                    if (selectedApps.isEmpty()) {
+                        Toast.makeText(this, "Please select at least one app", Toast.LENGTH_SHORT).show()
                         return
                     }
-                    packageName = selectedApp!!.packageName
-                    appName = selectedApp!!.appName
+                    packageName = selectedApps.joinToString(",") { it.packageName }
+                    appName = selectedApps.joinToString(",") { it.appName }
                 }
 
                 trigger = Trigger(

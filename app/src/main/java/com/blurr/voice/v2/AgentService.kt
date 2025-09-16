@@ -33,6 +33,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Queue
+import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * A Foreground Service responsible for hosting and running the AI Agent.
@@ -51,6 +53,7 @@ class AgentService : Service() {
     private val visualFeedbackManager by lazy { VisualFeedbackManager.getInstance(this) }
 
     // Declare agent and its dependencies. They will be initialized in onCreate.
+    private val taskQueue: Queue<String> = ConcurrentLinkedQueue()
     private lateinit var agent: Agent
     private lateinit var settings: AgentSettings
     private lateinit var fileSystem: FileSystem
@@ -155,59 +158,73 @@ class AgentService : Service() {
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "onStartCommand: Service has been started.")
+        Log.d(TAG, "onStartCommand received.")
+
+        // Handle stop action
         if (intent?.action == ACTION_STOP_SERVICE) {
             Log.i(TAG, "Received stop action. Stopping service.")
-            stopSelf()
-            return START_NOT_STICKY
-        }
-        // Extract the task from the intent
-        val task = intent?.getStringExtra(EXTRA_TASK)
-        if (task.isNullOrBlank()) {
-            Log.e(TAG, "Service started without a task. Stopping service.")
-            stopSelf()
-            return START_NOT_STICKY // Don't restart the service
-        }
-        isRunning = true
-        currentTask = task
-
-
-        // Start the service in the foreground.
-        val notification = createNotification("Agent is running task: $task")
-        try {
-            startForeground(NOTIFICATION_ID, notification)
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to start foreground service: ${e.message}")
-            stopSelf()
+            stopSelf() // onDestroy will handle cleanup
             return START_NOT_STICKY
         }
 
-        // Track the task in Firebase before starting execution
-        serviceScope.launch {
-            trackTaskInFirebase(task)
-        }
-
-        // Launch the agent's main run loop in a background coroutine.
-        // This prevents blocking the main thread.
-        serviceScope.launch {
-            try {
-                Log.i(TAG, "Launching agent run loop for task: $task")
-                agent.run(task)
-                // Track task completion
-                trackTaskCompletion(task, true)
-            } catch (e: Exception) {
-                Log.e(TAG, "Agent run failed with an exception", e)
-                // Track task failure
-                trackTaskCompletion(task, false, e.message)
-                // You could update the notification here to show an error state
-            } finally {
-                Log.i(TAG, "Agent run loop finished. Stopping service.")
-                stopSelf() // Stop the service once the task is complete or has failed
+        // Add new task to the queue
+        intent?.getStringExtra(EXTRA_TASK)?.let {
+            if (it.isNotBlank()) {
+                Log.d(TAG, "Adding task to queue: $it")
+                taskQueue.add(it)
             }
         }
 
-        // If the service is killed by the system, it will not be automatically restarted.
-        return START_NOT_STICKY
+        // If the agent is not already processing tasks, start the loop.
+        if (!isRunning && taskQueue.isNotEmpty()) {
+            Log.i(TAG, "Agent not running, starting processing loop.")
+            serviceScope.launch {
+                processTaskQueue()
+            }
+        } else {
+            if(isRunning) Log.d(TAG, "Task added to queue. Processor is already running.")
+            else Log.d(TAG, "Service started with no task, waiting for tasks.")
+        }
+
+        // Use START_STICKY to ensure the service stays running in the background
+        // until we explicitly stop it. This is crucial for a queue-based system.
+        return START_STICKY
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private suspend fun processTaskQueue() {
+        if (isRunning) {
+            Log.d(TAG, "processTaskQueue called but already running.")
+            return
+        }
+        isRunning = true
+
+        Log.i(TAG, "Starting task processing loop.")
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        startForeground(NOTIFICATION_ID, createNotification("Agent is starting..."))
+
+        while (taskQueue.isNotEmpty()) {
+            val task = taskQueue.poll() ?: continue // Dequeue task, continue if null
+            currentTask = task
+
+            // Update notification for the new task
+            notificationManager.notify(NOTIFICATION_ID, createNotification("Agent is running task: $task"))
+
+            try {
+                Log.i(TAG, "Executing task: $task")
+                trackTaskInFirebase(task)
+                agent.run(task)
+                trackTaskCompletion(task, true)
+                Log.i(TAG, "Task completed successfully: $task")
+            } catch (e: Exception) {
+                Log.e(TAG, "Task failed with an exception: $task", e)
+                trackTaskCompletion(task, false, e.message)
+                // Optionally update notification to show error state
+            }
+        }
+
+        Log.i(TAG, "Task queue is empty. Stopping service.")
+        stopSelf() // Stop the service only when the queue is empty
     }
 
     override fun onDestroy() {
@@ -216,11 +233,12 @@ class AgentService : Service() {
         // RESET STATUS
         isRunning = false
         currentTask = null
+        taskQueue.clear() // Clear any pending tasks
 
         // Cancel the coroutine scope to clean up the agent's running job and prevent leaks.
         serviceScope.cancel()
         visualFeedbackManager.hideTtsWave()
-
+        Log.i(TAG, "Service destroyed and all resources cleaned up.")
     }
 
     /**

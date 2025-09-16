@@ -281,11 +281,11 @@ class AgentService : Service() {
         )
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("AI Agent Active")
+            .setContentTitle("Panda Doing Task (Expand to stop Panda)")
             .setContentText(contentText)
             .addAction(
                 android.R.drawable.ic_media_pause, // Using built-in pause icon as stop button
-                "Stop Agent",
+                "Stop Panda",
                 stopPendingIntent
             )
             .setOngoing(true) // Makes notification persistent and harder to dismiss

@@ -1044,8 +1044,6 @@ class ConversationalAgentService : Service() {
                     typeface = Typeface.MONOSPACE
                 }
 
-                // **--- FIX IS HERE ---**
-                // A. Measure the view to get its dimensions *before* positioning.
                 textView.measure(
                     View.MeasureSpec.makeMeasureSpec((windowManager.defaultDisplay.width * 0.9).toInt(), View.MeasureSpec.EXACTLY),
                     View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)

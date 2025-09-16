@@ -80,6 +80,22 @@ class CreateTriggerActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             saveTrigger()
         }
+
+        val testButton = findViewById<Button>(R.id.testTriggerButton)
+        testButton.setOnClickListener {
+            testTrigger()
+        }
+    }
+
+    private fun testTrigger() {
+        val instruction = instructionEditText.text.toString()
+        if (instruction.isBlank()) {
+            Toast.makeText(this, "Instruction cannot be empty", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        triggerManager.executeInstruction(instruction)
+        Toast.makeText(this, "Test trigger fired!", Toast.LENGTH_SHORT).show()
     }
 
     override fun onSupportNavigateUp(): Boolean {

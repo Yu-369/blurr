@@ -172,22 +172,22 @@ class ConversationalAgentService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("ConvAgent", "Service onStartCommand")
 
-        if (!servicePermissionManager.isMicrophonePermissionGranted()) {
-            Log.e("ConvAgent", "RECORD_AUDIO permission not granted. Cannot start foreground service.")
-            serviceScope.launch {
-                ttsManager.speakText(getString(R.string.microphone_permission_not_granted))
-                delay(2000)
-                stopSelf()
-            }
-            return START_NOT_STICKY
-        }
-
         try {
             startForeground(NOTIFICATION_ID, createNotification())
         } catch (e: SecurityException) {
             Log.e("ConvAgent", "Failed to start foreground service: ${e.message}")
             Toast.makeText(this, "Cannot start voice assistant - permission missing", Toast.LENGTH_LONG).show()
             stopSelf()
+            return START_NOT_STICKY
+        }
+
+        if (!servicePermissionManager.isMicrophonePermissionGranted()) {
+            Log.e("ConvAgent", "RECORD_AUDIO permission not granted. Shutting down.")
+            serviceScope.launch {
+                ttsManager.speakText(getString(R.string.microphone_permission_not_granted))
+                delay(2000)
+                stopSelf()
+            }
             return START_NOT_STICKY
         }
 

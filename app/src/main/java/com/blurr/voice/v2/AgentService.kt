@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import com.blurr.voice.R
 import com.blurr.voice.utilities.ApiKeyManager
 import com.blurr.voice.api.Eyes
 import com.blurr.voice.api.Finger
@@ -288,7 +289,7 @@ class AgentService : Service() {
                 stopPendingIntent
             )
             .setOngoing(true) // Makes notification persistent and harder to dismiss
-            // .setSmallIcon(R.drawable.ic_agent_notification) // TODO: Add a notification icon
+             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()
     }
 

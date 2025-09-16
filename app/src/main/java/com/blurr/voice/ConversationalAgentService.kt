@@ -45,6 +45,7 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.analytics
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
+import com.blurr.voice.utilities.ServicePermissionManager
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -74,6 +75,7 @@ class ConversationalAgentService : Service() {
     private val visualFeedbackManager by lazy { VisualFeedbackManager.getInstance(this) }
     private var isTextModeActive = false
     private val freemiumManager by lazy { FreemiumManager() }
+    private val servicePermissionManager by lazy { ServicePermissionManager(this) }
 
     private var clarificationAttempts = 0
     private val maxClarificationAttempts = 1
@@ -169,15 +171,17 @@ class ConversationalAgentService : Service() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("ConvAgent", "Service onStartCommand")
-        
-        // Check if we have the required RECORD_AUDIO permission
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+        if (!servicePermissionManager.isMicrophonePermissionGranted()) {
             Log.e("ConvAgent", "RECORD_AUDIO permission not granted. Cannot start foreground service.")
-            Toast.makeText(this, "Microphone permission required for voice assistant", Toast.LENGTH_LONG).show()
-            stopSelf()
+            serviceScope.launch {
+                ttsManager.speakText(getString(R.string.microphone_permission_not_granted))
+                delay(2000)
+                stopSelf()
+            }
             return START_NOT_STICKY
         }
-        
+
         try {
             startForeground(NOTIFICATION_ID, createNotification())
         } catch (e: SecurityException) {
@@ -501,6 +505,12 @@ class ConversationalAgentService : Service() {
                             speakAndThenListen(busyMessage)
                             return@launch
                         }
+
+                        if (!servicePermissionManager.isAccessibilityServiceEnabled()) {
+                            speakAndThenListen(getString(R.string.accessibility_permission_needed_for_task))
+                            return@launch
+                        }
+
                         Log.d("ConvAgent", "Model identified a task. Checking for clarification...")
                         // --- NEW: Check if the task instruction needs clarification ---
                         removeClarificationQuestions()

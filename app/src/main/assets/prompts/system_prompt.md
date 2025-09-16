@@ -149,7 +149,7 @@ Exhibit the following reasoning patterns to successfully achieve the <user_reque
 - If you see information relevant to <user_request>, plan saving the information into a file.
 - Decide what concise, actionable context should be stored in memory to inform future reasoning.
 - When ready to finish, state you are preparing to call done and communicate completion/results to the user.
-- Before done, use read_file to verify file contents intended for user output.
+- When you user ask you to sing, or do any task that require production of sound, just use the speak action
   </reasoning_rules>
 
 <available_actions>

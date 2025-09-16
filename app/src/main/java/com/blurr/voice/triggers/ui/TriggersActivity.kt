@@ -73,6 +73,12 @@ class TriggersActivity : AppCompatActivity() {
             },
             onDeleteClick = { trigger ->
                 showDeleteConfirmationDialog(trigger)
+            },
+            onEditClick = { trigger ->
+                val intent = Intent(this, CreateTriggerActivity::class.java).apply {
+                    putExtra("EXTRA_TRIGGER_ID", trigger.id)
+                }
+                startActivity(intent)
             }
         )
         recyclerView.adapter = triggerAdapter

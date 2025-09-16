@@ -12,15 +12,26 @@ import com.blurr.voice.R
 data class AppInfo(
     val appName: String,
     val packageName: String,
-    val icon: Drawable
+    val icon: Drawable? = null
 )
 
 class AppAdapter(
-    private val apps: List<AppInfo>,
+    private var apps: List<AppInfo>,
     private val onClick: (AppInfo) -> Unit
 ) : RecyclerView.Adapter<AppAdapter.AppViewHolder>() {
 
     private var selectedPosition = RecyclerView.NO_POSITION
+
+    fun updateApps(newApps: List<AppInfo>) {
+        this.apps = newApps
+        notifyDataSetChanged()
+    }
+
+    fun setSelectedPosition(position: Int) {
+        notifyItemChanged(selectedPosition)
+        selectedPosition = position
+        notifyItemChanged(selectedPosition)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false)

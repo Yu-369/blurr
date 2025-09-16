@@ -39,6 +39,9 @@ class MyApplication : Application() {
 
         // Start the trigger monitoring service
         val serviceIntent = Intent(this, TriggerMonitoringService::class.java)
-        startService(serviceIntent)
-    }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }    }
 }

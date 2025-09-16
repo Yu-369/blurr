@@ -33,11 +33,11 @@ class Perception(
      */
     suspend fun analyze(previousState: Set<String>? = null): ScreenAnalysis {
         return coroutineScope {
-        val screenshotDeferred = async { eyes.openEyes() }
+//        val screenshotDeferred = async { eyes.openEyes() }
         val rawDataDeferred = async { eyes.getRawScreenData() }
         val keyboardStatusDeferred = async { eyes.getKeyBoardStatus() }
         val currentActivity = async { eyes.getCurrentActivityName() }
-        val screenshot = screenshotDeferred.await()
+//        val screenshot = screenshotDeferred.await()
         val rawData = rawDataDeferred.await() ?: RawScreenData(
             "<hierarchy error=\"service not available\"/>", 0, 0, 0,0
         )

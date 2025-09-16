@@ -31,11 +31,17 @@ class PandaNotificationListenerService : NotificationListenerService() {
             val matchingTrigger = notificationTriggers.find { it.packageName == packageName }
 
             if (matchingTrigger != null) {
-                Log.d(TAG, "Found matching trigger for package: $packageName. Executing instruction: ${matchingTrigger.instruction}")
+                val extras = sbn.notification.extras
+                val title = extras.getString("android.title") ?: ""
+                val text = extras.getCharSequence("android.text")?.toString() ?: ""
+                val notificationContent = "Notification Content: $title - $text"
+                val finalInstruction = "${matchingTrigger.instruction}\n\n$notificationContent"
+
+                Log.d(TAG, "Found matching trigger for package: $packageName. Executing instruction: $finalInstruction")
                 // Use the TriggerReceiver to start the agent service
                 val intent = android.content.Intent(this@PandaNotificationListenerService, TriggerReceiver::class.java).apply {
                     action = TriggerReceiver.ACTION_EXECUTE_TASK
-                    putExtra(TriggerReceiver.EXTRA_TASK_INSTRUCTION, matchingTrigger.instruction)
+                    putExtra(TriggerReceiver.EXTRA_TASK_INSTRUCTION, finalInstruction)
                 }
                 sendBroadcast(intent)
             }

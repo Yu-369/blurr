@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.ScrollView
@@ -35,6 +36,7 @@ class CreateTriggerActivity : AppCompatActivity() {
     private lateinit var dayOfWeekChipGroup: com.google.android.material.chip.ChipGroup
     private lateinit var appAdapter: AppAdapter
     private lateinit var scrollView: ScrollView
+    private lateinit var selectAllAppsCheckbox: CheckBox
 
     private var selectedTriggerType = TriggerType.SCHEDULED_TIME
     private var selectedApp: AppInfo? = null
@@ -98,6 +100,16 @@ class CreateTriggerActivity : AppCompatActivity() {
         setupRecyclerView()
         loadApps()
 
+        selectAllAppsCheckbox = findViewById(R.id.selectAllAppsCheckbox)
+        selectAllAppsCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            appsRecyclerView.isEnabled = !isChecked
+            appsRecyclerView.alpha = if (isChecked) 0.5f else 1.0f
+            if (isChecked) {
+                appAdapter.setSelectedPosition(RecyclerView.NO_POSITION)
+                selectedApp = null
+            }
+        }
+
         saveButton.setOnClickListener {
             saveTrigger()
         }
@@ -125,10 +137,14 @@ class CreateTriggerActivity : AppCompatActivity() {
                 }
             }
             TriggerType.NOTIFICATION -> {
-                selectedApp = AppInfo(
-                    appName = trigger.appName ?: "",
-                    packageName = trigger.packageName ?: ""
-                )
+                if (trigger.packageName == "*") {
+                    selectAllAppsCheckbox.isChecked = true
+                } else {
+                    selectedApp = AppInfo(
+                        appName = trigger.appName ?: "",
+                        packageName = trigger.packageName ?: ""
+                    )
+                }
             }
             TriggerType.CHARGING_STATE -> {
                 val radioGroup = findViewById<RadioGroup>(R.id.chargingStatusRadioGroup)
@@ -172,7 +188,7 @@ class CreateTriggerActivity : AppCompatActivity() {
     private fun loadApps() {
         lifecycleScope.launch(Dispatchers.IO) {
             val pm = packageManager
-            val appsList = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+            val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
                 .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
                 .map {
                     AppInfo(
@@ -183,24 +199,14 @@ class CreateTriggerActivity : AppCompatActivity() {
                 }
                 .sortedBy { it.appName }
 
-            val allAppsOption = AppInfo(
-                appName = "All Applications",
-                packageName = "*",
-                icon = getDrawable(android.R.drawable.ic_menu_gallery) // Using a generic icon
-            )
-
-            val finalList = mutableListOf(allAppsOption)
-            finalList.addAll(appsList)
-
-
             withContext(Dispatchers.Main) {
-                appAdapter.updateApps(finalList)
+                appAdapter.updateApps(apps)
                 if (existingTrigger != null && existingTrigger!!.type == TriggerType.NOTIFICATION) {
-                    val position = finalList.indexOfFirst { it.packageName == existingTrigger!!.packageName }
+                    val position = apps.indexOfFirst { it.packageName == existingTrigger!!.packageName }
                     if (position != -1) {
                         appAdapter.setSelectedPosition(position)
                         appsRecyclerView.scrollToPosition(position)
-                        selectedApp = finalList[position]
+                        selectedApp = apps[position]
                     }
                 }
             }
@@ -237,15 +243,25 @@ class CreateTriggerActivity : AppCompatActivity() {
                 )
             }
             TriggerType.NOTIFICATION -> {
-                if (selectedApp == null) {
-                    Toast.makeText(this, "Please select an app", Toast.LENGTH_SHORT).show()
-                    return
+                val packageName: String
+                val appName: String
+                if (selectAllAppsCheckbox.isChecked) {
+                    packageName = "*"
+                    appName = "All Applications"
+                } else {
+                    if (selectedApp == null) {
+                        Toast.makeText(this, "Please select an app", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+                    packageName = selectedApp!!.packageName
+                    appName = selectedApp!!.appName
                 }
+
                 trigger = Trigger(
                     id = existingTrigger?.id ?: UUID.randomUUID().toString(),
                     type = TriggerType.NOTIFICATION,
-                    packageName = selectedApp!!.packageName,
-                    appName = selectedApp!!.appName,
+                    packageName = packageName,
+                    appName = appName,
                     instruction = instruction,
                     isEnabled = existingTrigger?.isEnabled ?: true
                 )

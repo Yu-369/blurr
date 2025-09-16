@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.ScrollView
@@ -35,6 +36,7 @@ class CreateTriggerActivity : AppCompatActivity() {
     private lateinit var dayOfWeekChipGroup: com.google.android.material.chip.ChipGroup
     private lateinit var appAdapter: AppAdapter
     private lateinit var scrollView: ScrollView
+    private lateinit var selectAllAppsCheckbox: CheckBox
 
     private var selectedTriggerType = TriggerType.SCHEDULED_TIME
     private var selectedApp: AppInfo? = null
@@ -98,9 +100,35 @@ class CreateTriggerActivity : AppCompatActivity() {
         setupRecyclerView()
         loadApps()
 
+        selectAllAppsCheckbox = findViewById(R.id.selectAllAppsCheckbox)
+        selectAllAppsCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            appsRecyclerView.isEnabled = !isChecked
+            appsRecyclerView.alpha = if (isChecked) 0.5f else 1.0f
+            if (isChecked) {
+                appAdapter.setSelectedPosition(RecyclerView.NO_POSITION)
+                selectedApp = null
+            }
+        }
+
         saveButton.setOnClickListener {
             saveTrigger()
         }
+
+        val testButton = findViewById<Button>(R.id.testTriggerButton)
+        testButton.setOnClickListener {
+            testTrigger()
+        }
+    }
+
+    private fun testTrigger() {
+        val instruction = instructionEditText.text.toString()
+        if (instruction.isBlank()) {
+            Toast.makeText(this, "Instruction cannot be empty", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        triggerManager.executeInstruction(instruction)
+        Toast.makeText(this, "Test trigger fired!", Toast.LENGTH_SHORT).show()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -125,10 +153,14 @@ class CreateTriggerActivity : AppCompatActivity() {
                 }
             }
             TriggerType.NOTIFICATION -> {
-                selectedApp = AppInfo(
-                    appName = trigger.appName ?: "",
-                    packageName = trigger.packageName ?: ""
-                )
+                if (trigger.packageName == "*") {
+                    selectAllAppsCheckbox.isChecked = true
+                } else {
+                    selectedApp = AppInfo(
+                        appName = trigger.appName ?: "",
+                        packageName = trigger.packageName ?: ""
+                    )
+                }
             }
             TriggerType.CHARGING_STATE -> {
                 val radioGroup = findViewById<RadioGroup>(R.id.chargingStatusRadioGroup)
@@ -227,15 +259,25 @@ class CreateTriggerActivity : AppCompatActivity() {
                 )
             }
             TriggerType.NOTIFICATION -> {
-                if (selectedApp == null) {
-                    Toast.makeText(this, "Please select an app", Toast.LENGTH_SHORT).show()
-                    return
+                val packageName: String
+                val appName: String
+                if (selectAllAppsCheckbox.isChecked) {
+                    packageName = "*"
+                    appName = "All Applications"
+                } else {
+                    if (selectedApp == null) {
+                        Toast.makeText(this, "Please select an app", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+                    packageName = selectedApp!!.packageName
+                    appName = selectedApp!!.appName
                 }
+
                 trigger = Trigger(
                     id = existingTrigger?.id ?: UUID.randomUUID().toString(),
                     type = TriggerType.NOTIFICATION,
-                    packageName = selectedApp!!.packageName,
-                    appName = selectedApp!!.appName,
+                    packageName = packageName,
+                    appName = appName,
                     instruction = instruction,
                     isEnabled = existingTrigger?.isEnabled ?: true
                 )

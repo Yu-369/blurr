@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.animation.ValueAnimator
+import android.app.PendingIntent
 import android.graphics.Typeface
 import android.graphics.drawable.LayerDrawable
 import android.os.Build
@@ -100,6 +101,7 @@ class ConversationalAgentService : Service() {
     companion object {
         const val NOTIFICATION_ID = 3
         const val CHANNEL_ID = "ConversationalAgentChannel"
+        const val ACTION_STOP_SERVICE = "com.blurr.voice.ACTION_STOP_SERVICE"
         var isRunning = false
         const val MEMORY_ENABLED = false
     }
@@ -171,6 +173,20 @@ class ConversationalAgentService : Service() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("ConvAgent", "Service onStartCommand")
+
+        if (intent?.action == ACTION_STOP_SERVICE) {
+            Log.i("ConvAgent", "Received stop action. Stopping service.")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        
+        // Check if we have the required RECORD_AUDIO permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Log.e("ConvAgent", "RECORD_AUDIO permission not granted. Cannot start foreground service.")
+            Toast.makeText(this, "Microphone permission required for voice assistant", Toast.LENGTH_LONG).show()
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         try {
             startForeground(NOTIFICATION_ID, createNotification())
@@ -951,11 +967,26 @@ class ConversationalAgentService : Service() {
         }
     }
     private fun createNotification(): Notification {
+        val stopIntent = Intent(this, ConversationalAgentService::class.java).apply {
+            action = ACTION_STOP_SERVICE
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            0,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Conversational Agent")
             .setContentText("Listening for your commands...")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
+            .addAction(
+                android.R.drawable.ic_media_pause, // Using built-in pause icon as stop button
+                "Stop",
+                stopPendingIntent
+            )
             .build()
     }
 

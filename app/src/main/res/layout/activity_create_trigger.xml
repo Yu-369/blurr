@@ -91,6 +91,13 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
+                <CheckBox
+                    android:id="@+id/selectAllAppsCheckbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All Applications"
+                    android:textColor="@color/white"/>
+
                 <TextView
                     style="@style/PermissionHeading"
                     android:text="Select App" />
@@ -138,17 +145,34 @@
             </LinearLayout>
 
 
-            <Button
-                android:id="@+id/saveTriggerButton"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/rounded_button"
-                android:paddingStart="32dp"
-                android:paddingEnd="32dp"
-                android:text="Save Trigger"
-                android:textColor="@color/white" />
+                android:orientation="horizontal"
+                android:gravity="center_horizontal"
+                android:layout_marginTop="24dp">
+
+                <Button
+                    android:id="@+id/testTriggerButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_button_secondary"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="Test Trigger"
+                    android:textColor="@color/white"
+                    android:layout_marginEnd="8dp"/>
+
+                <Button
+                    android:id="@+id/saveTriggerButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_button"
+                    android:paddingStart="32dp"
+                    android:paddingEnd="32dp"
+                    android:text="Save Trigger"
+                    android:textColor="@color/white" />
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>

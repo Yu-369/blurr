@@ -21,11 +21,6 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.blurr.voice.agent.v1.AgentConfig
-import com.blurr.voice.agent.v1.ClarificationAgent
-import com.blurr.voice.agent.v1.InfoPool
-import com.blurr.voice.agent.v1.VisionHelper
-import com.blurr.voice.agent.v1.VisionMode
 import com.blurr.voice.api.Eyes
 //import com.blurr.voice.services.AgentTaskService
 import com.blurr.voice.utilities.SpeechCoordinator
@@ -35,6 +30,7 @@ import android.view.Gravity
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.graphics.toColorInt
+import com.blurr.voice.agents.ClarificationAgent
 import com.blurr.voice.utilities.TTSManager
 import com.blurr.voice.utilities.addResponse
 import com.blurr.voice.utilities.getReasoningModelApiResponse
@@ -44,7 +40,7 @@ import com.blurr.voice.utilities.FreemiumManager
 import com.blurr.voice.utilities.UserProfileManager
 import com.blurr.voice.utilities.VisualFeedbackManager
 import com.blurr.voice.v2.AgentService
-import com.blurr.voice.v2.llm.GeminiApi
+//import com.blurr.voice.v2.llm.GeminiApi
 import com.google.ai.client.generativeai.type.TextPart
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -61,6 +57,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 data class ModelDecision(
     val type: String = "Reply",
@@ -88,7 +85,7 @@ class ConversationalAgentService : Service() {
     private var sttErrorAttempts = 0
     private val maxSttErrorAttempts = 2
 
-     private val clarificationAgent = ClarificationAgent()
+    private val clarificationAgent = ClarificationAgent()
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
     private val memoryManager by lazy { MemoryManager.getInstance(this) }
@@ -492,10 +489,10 @@ class ConversationalAgentService : Service() {
                     gracefulShutdown("Goodbye!", "command")
                     return@launch
                 }
-
-                val rawModelResponse = getReasoningModelApiResponse(conversationHistory) ?: "### Type ###\nReply\n### Reply ###\nI'm sorry, I had an issue.\n### Instruction ###\n\n### Should End ###\nContinue"
+                val defaultJsonResponse = """{"Type": "Reply", "Reply": "I'm sorry, I had an issue.", "Instruction": "", "Should End": "Continue"}"""
+                val rawModelResponse = getReasoningModelApiResponse(conversationHistory) ?: defaultJsonResponse
                 val decision = parseModelResponse(rawModelResponse)
-
+                Log.d("TTS_DEBUG", "Reply received from GeminiApi: -->${rawModelResponse}<--")
                 when (decision.type) {
                     "Task" -> {
                         // Track task request
@@ -641,65 +638,51 @@ class ConversationalAgentService : Service() {
             }
         }
     }
-    private suspend fun getGroundedStepsForTask(taskInstruction: String): String {
-        Log.d("ConvAgent", "Performing grounded search for task: '$taskInstruction'")
-
-        // We create a specific prompt for the search.
-        val searchPrompt = """
-        Search the web and provide a concise, step-by-step guide for a human assistant to perform the following task on an Android phone: '$taskInstruction'.
-        Focus on the exact taps and settings involved.
-    """.trimIndent()
-
-        // Here we use the direct REST API call with search that we created previously.
-        // We need an instance of GeminiApi to call it.
-        // NOTE: You might need to adjust how you get your GeminiApi instance.
-        // For now, we'll assume we can create one or access it.
-        val geminiApi = GeminiApi("gemini-2.5-flash", ApiKeyManager, 2)
-
-        val searchResult = geminiApi.generateGroundedContent(searchPrompt)
-        Log.d("CONVO_SEARCH", searchResult.toString())
-        return if (!searchResult.isNullOrBlank()) {
-            searchResult
-        } else {
-            ""
-        }
-    }
-    // --- NEW: Added the clarification check logic directly into the service ---
+//    private suspend fun getGroundedStepsForTask(taskInstruction: String): String {
+//        Log.d("ConvAgent", "Performing grounded search for task: '$taskInstruction'")
+//
+//        // We create a specific prompt for the search.
+//        val searchPrompt = """
+//        Search the web and provide a concise, step-by-step guide for a human assistant to perform the following task on an Android phone: '$taskInstruction'.
+//        Focus on the exact taps and settings involved.
+//    """.trimIndent()
+//
+//        // Here we use the direct REST API call with search that we created previously.
+//        // We need an instance of GeminiApi to call it.
+//        // NOTE: You might need to adjust how you get your GeminiApi instance.
+//        // For now, we'll assume we can create one or access it.
+//        val geminiApi = GeminiApi("gemini-2.5-flash", ApiKeyManager, 2)
+//
+//        val searchResult = geminiApi.generateGroundedContent(searchPrompt)
+//        Log.d("CONVO_SEARCH", searchResult.toString())
+//        return if (!searchResult.isNullOrBlank()) {
+//            searchResult
+//        } else {
+//            ""
+//        }
+//    }
     private suspend fun checkIfClarificationNeeded(instruction: String): Pair<Boolean, List<String>> {
-        try {
-            val tempInfoPool = InfoPool(instruction = instruction)
-            // Use 'this' as the context for the service
-            val config = AgentConfig(visionMode = VisionMode.XML, apiKey = "", context = this)
+        Log.d("ConvAgent", "Checking for clarification on instruction: '$instruction'")
 
-            Log.d("ConvAgent", "Checking clarification with conversation history (${conversationHistory.size} messages)")
-            val prompt = clarificationAgent.getPromptWithHistory(tempInfoPool, config, conversationHistory)
-            val chat = clarificationAgent.initChat()
-            val combined = VisionHelper.createChatResponse("user", prompt, chat, config)
-            val response = withContext(Dispatchers.IO) {
-                getReasoningModelApiResponse(combined)
-            }
+        // Use the clarificationAgent instance to analyze the instruction.
+        // The agent encapsulates all the logic for API calls and parsing.
+        val result = clarificationAgent.analyze(
+            instruction = instruction,
+            conversationHistory = conversationHistory,
+            context = this@ConversationalAgentService // Pass the service context
+        )
 
-            val parsedResult = clarificationAgent.parseResponse(response.toString())
-            val status = parsedResult["status"] ?: "CLEAR"
-            val questionsText = parsedResult["questions"] ?: ""
+        // Determine the final result based on the agent's analysis.
+        val needsClarification = result.status == "NEEDS_CLARIFICATION" && result.questions.isNotEmpty()
 
-            Log.d("ConvAgent", "Clarification check result: status=$status, questions=${questionsText.take(100)}...")
-
-            return if (status == "NEEDS_CLARIFICATION" && questionsText.isNotEmpty()) {
-                val questions = clarificationAgent.parseQuestions(questionsText)
-                Log.d("ConvAgent", "Clarification needed. Questions: $questions")
-                Pair(true, questions)
-            } else {
-                Log.d("ConvAgent", "No clarification needed or no questions generated")
-                Pair(false, emptyList())
-            }
-        } catch (e: Exception) {
-            Log.e("ConvAgent", "Error checking for clarification", e)
-            return Pair(false, emptyList())
+        if (needsClarification) {
+            Log.d("ConvAgent", "Clarification is needed. Questions: ${result.questions}")
+        } else {
+            Log.d("ConvAgent", "Instruction is clear. Status: ${result.status}")
         }
+
+        return Pair(needsClarification, result.questions)
     }
-
-
     private fun initializeConversation() {
         val memoryContextSection = if (MEMORY_ENABLED) {
             """
@@ -715,10 +698,10 @@ class ConversationalAgentService : Service() {
             ### End Memory Status ###
             """
         }
-        
+
         val systemPrompt = """
-            You are a helpful voice assistant called Panda that can either have a conversation or ask executor to execute tasks on the user's phone.
-            The executor can speak, listen, see screen, tap screen, and basically use the phone as normal human would
+            You are a helpful voice assistant called Panda that can either have a conversation or ask an executor to execute tasks on the user's phone.
+            The executor can speak, listen, see the screen, tap the screen, and basically use the phone as a normal human would.
 
             {agent_status_context}
 
@@ -731,29 +714,29 @@ class ConversationalAgentService : Service() {
             2. If you know the user's name from the memories, refer to them by their name to make the conversation more personal and friendly.
             3. Use the current screen context to better understand what the user is looking at and provide more relevant responses.
             4. If the user asks about something on the screen, you can reference the screen content directly.
+            5. When the user ask to sing
 
             $memoryContextSection
         
-            Analyze the user's request and respond in the following format:
+            Analyze the user's request and respond ONLY with a single, valid JSON object.
+            Do not include any text, notes, or explanations outside of the JSON object.
+            The JSON object must have the following structure:
+            
+            {
+              "Type": "String",
+              "Reply": "String",
+              "Instruction": "String",
+              "Should End": "String"
+            }
 
-            ### Type ###
-            Either "Task", "Reply", or "KillTask".
-            - Use "Task" if the user is asking you to DO something on the device (e.g., "open settings", "send a text to Mom", "post a tweet").
-            - Use "Reply" for conversational questions (e.g., "what's the weather?", "tell me a joke", "how are you?").
-            - Use "KillTask" ONLY if an automation task is running and the user wants to stop it.
-
-            ### Reply ###
-            The conversational text to speak to the user.
-            - If it's a task, this should be a confirmation, like "Okay, opening settings." or "Sure, I can do that.".
-            - If it's a reply, this is the answer to the user's question.
-            - If you know the user's name, use it naturally in your responses to make the conversation more personal.
-
-            ### Instruction ###
-            - If Type is "Task", provide the precise, literal instruction for the task agent here. This should be a complete command.
-            - If Type is "Reply" or "KillTask", this field should be empty.
-
-            ### Should End ###
-            "Continue" or "Finished". Use "Finished" only when the conversation is naturally over.
+            Here are the rules for the JSON values:
+            - "Type": Must be one of "Task", "Reply", or "KillTask".
+              - Use "Task" if the user is asking you to DO something on the device (e.g., "open settings", "send a text to Mom").
+              - Use "Reply" for conversational questions (e.g., "what's the weather?", "tell me a joke").
+              - Use "KillTask" ONLY if an automation task is running and the user wants to stop it.
+            - "Reply": The text to speak to the user. This is a confirmation for a "Task", or the direct answer for a "Reply".
+            - "Instruction": The precise, literal instruction for the task agent. This field should be an empty string "" if the "Type" is not "Task".
+            - "Should End": Must be either "Continue" or "Finished". Use "Finished" only when the conversation is naturally over.
         """.trimIndent()
 
         conversationHistory = addResponse("user", systemPrompt, emptyList())
@@ -929,15 +912,18 @@ class ConversationalAgentService : Service() {
             emptyList()
         }
     }
-
     private fun parseModelResponse(response: String): ModelDecision {
         try {
-            val type = response.substringAfter("### Type ###", "").substringBefore("###").trim()
-            val reply = response.substringAfter("### Reply ###", "").substringBefore("###").trim()
-            val instruction = response.substringAfter("### Instruction ###", "").substringBefore("###").trim()
-            val shouldEndStr = response.substringAfter("### Should End ###", "").trim()
+            val json = JSONObject(response)
+            Log.d("justchecking", json.toString())
+            // Use optString for safety, providing a default value if the key doesn't exist.
+            val type = json.optString("Type", "Reply")
+            val reply = json.optString("Reply", "")
+            val instruction = json.optString("Instruction", "")
+            val shouldEndStr = json.optString("Should End", "Continue")
             val shouldEnd = shouldEndStr.equals("Finished", ignoreCase = true)
 
+            // Add a fallback reply if the model provides an empty one for a conversational turn.
             val finalReply = if (reply.isEmpty() && type.equals("Reply", ignoreCase = true)) {
                 "I'm not sure how to respond to that."
             } else {
@@ -945,9 +931,13 @@ class ConversationalAgentService : Service() {
             }
 
             return ModelDecision(type, finalReply, instruction, shouldEnd)
-        } catch (e: Exception) {
-            Log.e("ConvAgent", "Error parsing custom format, falling back. Response: $response")
+        } catch (e: org.json.JSONException) {
+            Log.e("ConvAgent", "Error parsing JSON response, falling back. Response: $response", e)
+            // Fallback for malformed JSON
             return ModelDecision(reply = "I seem to have gotten my thoughts tangled. Could you repeat that?")
+        } catch (e: Exception) {
+            Log.e("ConvAgent", "Generic error parsing model response, falling back. Response: $response", e)
+            return ModelDecision(reply = "I had a minor issue processing that. Could you try again?")
         }
     }
     private fun createNotification(): Notification {
@@ -1115,7 +1105,7 @@ class ConversationalAgentService : Service() {
             // 1. Extract memories from the conversation before ending
             if (conversationHistory.size > 1 && MEMORY_ENABLED) {
                 Log.d("ConvAgent", "Extracting memories before shutdown.")
-                MemoryExtractor.extractAndStoreMemories(conversationHistory, memoryManager, usedMemories)
+//                MemoryExtractor.extractAndStoreMemories(conversationHistory, memoryManager, usedMemories)
             } else if (!MEMORY_ENABLED) {
                 Log.d("ConvAgent", "Memory disabled, skipping memory extraction.")
             }
@@ -1153,7 +1143,7 @@ class ConversationalAgentService : Service() {
         // Make a thread-safe copy of the conversation history.
         if (conversationHistory.size > 1 && MEMORY_ENABLED) {
             Log.d("ConvAgent", "Extracting memories before shutdown.")
-            MemoryExtractor.extractAndStoreMemories(conversationHistory, memoryManager, usedMemories)
+//            MemoryExtractor.extractAndStoreMemories(conversationHistory, memoryManager, usedMemories)
         } else if (!MEMORY_ENABLED) {
             Log.d("ConvAgent", "Memory disabled, skipping memory extraction.")
         }

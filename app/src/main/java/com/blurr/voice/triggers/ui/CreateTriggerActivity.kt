@@ -28,6 +28,7 @@ class CreateTriggerActivity : AppCompatActivity() {
     private lateinit var instructionEditText: EditText
     private lateinit var scheduledTimeOptions: LinearLayout
     private lateinit var notificationOptions: LinearLayout
+    private lateinit var chargingStateOptions: LinearLayout
     private lateinit var timePicker: TimePicker
     private lateinit var appsRecyclerView: RecyclerView
     private lateinit var dayOfWeekChipGroup: com.google.android.material.chip.ChipGroup
@@ -49,6 +50,7 @@ class CreateTriggerActivity : AppCompatActivity() {
         instructionEditText = findViewById(R.id.instructionEditText)
         scheduledTimeOptions = findViewById(R.id.scheduledTimeOptions)
         notificationOptions = findViewById(R.id.notificationOptions)
+        chargingStateOptions = findViewById(R.id.chargingStateOptions)
         timePicker = findViewById(R.id.timePicker)
         appsRecyclerView = findViewById(R.id.appsRecyclerView)
         dayOfWeekChipGroup = findViewById(R.id.dayOfWeekChipGroup)
@@ -90,10 +92,17 @@ class CreateTriggerActivity : AppCompatActivity() {
             TriggerType.SCHEDULED_TIME -> {
                 scheduledTimeOptions.visibility = View.VISIBLE
                 notificationOptions.visibility = View.GONE
+                chargingStateOptions.visibility = View.GONE
             }
             TriggerType.NOTIFICATION -> {
                 scheduledTimeOptions.visibility = View.GONE
                 notificationOptions.visibility = View.VISIBLE
+                chargingStateOptions.visibility = View.GONE
+            }
+            TriggerType.CHARGING_STATE -> {
+                scheduledTimeOptions.visibility = View.GONE
+                notificationOptions.visibility = View.GONE
+                chargingStateOptions.visibility = View.VISIBLE
             }
         }
     }
@@ -164,6 +173,19 @@ class CreateTriggerActivity : AppCompatActivity() {
                     type = TriggerType.NOTIFICATION,
                     packageName = selectedApp!!.packageName,
                     appName = selectedApp!!.appName,
+                    instruction = instruction
+                )
+            }
+            TriggerType.CHARGING_STATE -> {
+                val radioGroup = findViewById<RadioGroup>(R.id.chargingStatusRadioGroup)
+                val selectedStatus = if (radioGroup.checkedRadioButtonId == R.id.radioConnected) {
+                    "Connected"
+                } else {
+                    "Disconnected"
+                }
+                Trigger(
+                    type = TriggerType.CHARGING_STATE,
+                    chargingStatus = selectedStatus,
                     instruction = instruction
                 )
             }

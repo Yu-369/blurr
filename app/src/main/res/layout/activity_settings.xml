@@ -171,7 +171,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Get your free Picovoice API Key, you can paste it here."
+                android:text="@string/get_your_free_picovoice_api_key_you_can_paste_it_here"
                 android:textColor="#888888"
                 android:textSize="12sp" />
 

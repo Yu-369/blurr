@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.animation.ValueAnimator
+import android.app.PendingIntent
 import android.graphics.Typeface
 import android.graphics.drawable.LayerDrawable
 import android.os.Build

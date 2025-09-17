@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.blurr.voice.R
 import com.blurr.voice.triggers.TriggerManager
 import com.blurr.voice.triggers.TriggerType
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class TriggersActivity : AppCompatActivity() {
@@ -99,7 +100,7 @@ class TriggersActivity : AppCompatActivity() {
     }
 
     private fun setupFab() {
-        val fab = findViewById<FloatingActionButton>(R.id.addTriggerFab)
+        val fab = findViewById<ExtendedFloatingActionButton>(R.id.addTriggerFab)
         fab.setOnClickListener {
             startActivity(Intent(this, ChooseTriggerTypeActivity::class.java))
         }

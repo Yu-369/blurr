@@ -273,14 +273,18 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
     private fun handleIntent(intent: Intent?) {
         if (intent?.action == "com.blurr.voice.WAKE_UP_PANDA") {
             Log.d("MainActivity", "Wake up Panda shortcut activated!")
-            if (!ConversationalAgentService.isRunning) {
-                val serviceIntent = Intent(this, ConversationalAgentService::class.java)
-                ContextCompat.startForegroundService(this, serviceIntent)
-                Toast.makeText(this, "Panda is waking up...", Toast.LENGTH_SHORT).show()
-            } else {
-                Log.d("MainActivity", "ConversationalAgentService is already running.")
-                Toast.makeText(this, "Panda is already awake!", Toast.LENGTH_SHORT).show()
-            }
+            startConversationalAgent()
+        }
+    }
+
+    private fun startConversationalAgent() {
+        if (!ConversationalAgentService.isRunning) {
+            val serviceIntent = Intent(this, ConversationalAgentService::class.java)
+            ContextCompat.startForegroundService(this, serviceIntent)
+            Toast.makeText(this, "Panda is waking up...", Toast.LENGTH_SHORT).show()
+        } else {
+            Log.d("MainActivity", "ConversationalAgentService is already running.")
+            Toast.makeText(this, "Panda is already awake!", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -293,6 +297,9 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
     private fun setupClickListeners() {
         findViewById<TextView>(R.id.triggersButton).setOnClickListener {
             startActivity(Intent(this, com.blurr.voice.triggers.ui.TriggersActivity::class.java))
+        }
+        findViewById<TextView>(R.id.startConversationButton).setOnClickListener {
+            startConversationalAgent()
         }
 //        findViewById<TextView>(R.id.memoriesButton).setOnClickListener {
 //            startActivity(Intent(this, MemoriesActivity::class.java))

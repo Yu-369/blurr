@@ -1,10 +1,8 @@
 # 🐼 Panda: Your Personal AI Phone Operator  
 **You touch grass. I'll touch your glass.**  
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/b2hxFNXvWk)
-[![Apply for Internal Test](https://img.shields.io/badge/Apply%20Now%20For%20Closed%20Testing-34A853?style=for-the-badge&logo=googleforms&logoColor=white)](https://docs.google.com/forms/d/e/1FAIpQLScgviOQ13T8Z5sYD6KOLAPex4H_St0ubWNmuRIsXweFzRVrSw/viewform?usp=dialog)
+<a href='https://play.google.com/store/apps/details?id=com.blurr.voice&hl=en_US&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width=250/></a>
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ayush0Chaudhary/blurr)
-
-Apply for the closed test: [google form](https://docs.google.com/forms/d/e/1FAIpQLScgviOQ13T8Z5sYD6KOLAPex4H_St0ubWNmuRIsXweFzRVrSw/viewform?usp=dialog)
 ---
 
 # Demos:

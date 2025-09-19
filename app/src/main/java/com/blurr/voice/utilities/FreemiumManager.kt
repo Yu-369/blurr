@@ -16,7 +16,7 @@ class FreemiumManager {
     private val auth = Firebase.auth
 
     companion object {
-        const val FREE_PLAN_TASK_LIMIT = 15 // Set your free task limit here
+        const val FREE_PLAN_TASK_LIMIT = 100 // Set your free task limit here
     }
 
     private suspend fun isUserSubscribed(): Boolean {

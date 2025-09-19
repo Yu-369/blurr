@@ -184,7 +184,7 @@ class OnboardingPermissionsActivity : AppCompatActivity() {
 
         // Now, show the dialog
         dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.WHITE)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.GREEN)
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#F44336"))
     }
     @RequiresApi(Build.VERSION_CODES.Q)

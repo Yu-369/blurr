@@ -8,7 +8,7 @@
 # Demos:
 
 #### Explaining all the triggers of Panda
- [![Watch the video](https://img.youtube.com/vi/vgHiFNX7lsw/hqdefault.jpg)](https://www.youtube.com/embed/vgHiFNX7lsw)
+ [![Watch the video](https://img.youtube.com/vi/IDvuqmPyKZs/hqdefault.jpg)](https://www.youtube.com/embed/IDvuqmPyKZs)
 
 #### Sending Welcome message to all the new Connections on Linkedin
  [![Watch the video](https://img.youtube.com/vi/JO_EWFYJJjA/hqdefault.jpg)](https://www.youtube.com/embed/JO_EWFYJJjA)

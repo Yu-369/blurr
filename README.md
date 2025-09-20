@@ -45,10 +45,44 @@ Panda is built on a sophisticated multi-agent system written entirely in Kotlin.
 * Android Studio (latest version recommended)
 * An Android device or emulator with API level 26+
 * Some Gemini keys, sample ENV
+```python
+# the name of these keys donot mean you need google cloud, you can use any servers that can accept requests, i will improve the developer experience in the future by making openapi compatible
+GCLOUD_PROXY_URL=<url-of-any-backend-that-accept-responses-like-below-payload>
+GCLOUD_PROXY_URL_KEY=<any-password-you-wanna-set-or-leave-empty>
 ```
-sdk.dir=
+`payload`
+```
+{
+  "modelName": "model-name",
+  "messages": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Hello, what can you do?"
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "I can help you with a variety of tasks. What do you need assistance with today?"
+        }
+      ]
+    }
+  ]
+}
+```
+or
+```
+//you can also add gemini keys to play around
+
 GEMINI_API_KEYS=
 ```
+
+
+
 
 ### Installation
 
@@ -58,31 +92,12 @@ GEMINI_API_KEYS=
     cd blurr
     ```
 
-2.  **Set up API Keys:**
-    This project uses a `local.properties` file to securely handle API keys. This file is included in `.gitignore` and should never be committed.
-    * Create a file named `local.properties` in the root directory of the project.
-    * Add your API keys to this file in the following format:
-        ```properties
-         sdk.dir=
-         GEMINI_API_KEYS=<add 2-3 keys working here>
-         TAVILY_API=<not-req><add randome string>
-         MEM0_API=<not-req><add randome string>
-         PICOVOICE_ACCESS_KEY=<not-req><add randome string>
-         GOOGLE_TTS_API_KEY=<req> (issue will fix this)
-         GCLOUD_GATEWAY_PICOVOICE_KEY=<not needed><add randome string>
-         GCLOUD_GATEWAY_URL=<not needed><add randome string>
-         GCLOUD_PROXY_URL=<not needed><add randome string>
-         GCLOUD_PROXY_URL_KEY=<not needed><add randome string>
-         REVENUE_CAT_PUBLIC_URL=<not needed> <add randome string>
-         REVENUECAT_API_KEY=<not needed> <add randome string>
-        ```
-
-3.  **Build & Run:**
+2.  **Build & Run:**
     * Open the project in Android Studio.
     * Let Gradle sync all the dependencies.
     * Run the app on your selected device or emulator.
 
-4.  **Enable Accessibility Service:**
+3.  **Enable Accessibility Service:**
     * On the first run, the app will prompt you to grant Accessibility permission.
     * Click "Grant Access" and enable the "Panda" service in your phone's settings. This is required for the agent to see and control the screen.
 

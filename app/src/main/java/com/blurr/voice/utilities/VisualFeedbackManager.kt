@@ -34,6 +34,7 @@ class VisualFeedbackManager private constructor(private val context: Context) {
     private var ttsVisualizer: TtsVisualizer? = null
     private var transcriptionView: TextView? = null
     private var inputBoxView: View? = null
+    private var thinkingIndicatorView: View? = null
 
     private var speakingOverlay: View? = null
 
@@ -334,4 +335,85 @@ class VisualFeedbackManager private constructor(private val context: Context) {
             speakingOverlay = null
         }
     }
+    // --- Thinking indicator (replace existing methods with these) ---
+    fun showThinkingIndicator(initialText: String = "Thinking...") {
+        if (thinkingIndicatorView != null) {
+            updateThinking(initialText)
+            return
+        }
+
+        mainHandler.post {
+            // If a previous instance exists on window manager, try to remove it silently
+            thinkingIndicatorView?.let {
+                try { if (it.isAttachedToWindow) windowManager.removeView(it) } catch (_: Exception) {}
+            }
+
+            // Build a TextView similar to the transcription view so it looks consistent
+            val textView = TextView(context).apply {
+                text = initialText
+                val glassBackground = GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR,
+                    intArrayOf(0xDD0D0D2E.toInt(), 0xDD2A0D45.toInt())
+                ).apply {
+                    cornerRadius = 28f
+                    setStroke(1, 0x80FFFFFF.toInt())
+                }
+                background = glassBackground
+                setTextColor(0xFFE0E0E0.toInt())
+                textSize = 16f
+                setPadding(40, 24, 40, 24)
+                typeface = Typeface.MONOSPACE
+                // Optional: higher elevation on supported API levels
+                ViewCompat.setElevation(this, 12f)
+            }
+
+            thinkingIndicatorView = textView
+
+            val params = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                // Place it above the wave and near center (adjust y as needed)
+                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                y = 320 // tweak dp offset by multiplying with density if you want to use dp
+                // If you want the same y calculation in dp:
+                // y = (320 * context.resources.displayMetrics.density).toInt()
+            }
+
+            try {
+                windowManager.addView(textView, params)
+                Log.d(TAG, "Thinking indicator added.")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error adding thinking indicator", e)
+                thinkingIndicatorView = null
+            }
+        }
+    }
+
+    fun updateThinking(text: String) {
+        mainHandler.post {
+            (thinkingIndicatorView as? TextView)?.text = text
+        }
+    }
+
+    fun hideThinkingIndicator() {
+        mainHandler.post {
+            thinkingIndicatorView?.let { view ->
+                if (view.isAttachedToWindow) {
+                    try {
+                        windowManager.removeView(view)
+                        Log.d(TAG, "Thinking indicator removed.")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error removing thinking indicator", e)
+                    }
+                }
+            }
+            thinkingIndicatorView = null
+        }
+    }
+
+
 }

@@ -42,24 +42,25 @@ class SpeechCoordinator private constructor(private val context: Context) {
      * @param text The text to speak
      */
     suspend fun speakText(text: String) {
+        val cleanedText = text.replace("*", "")
         speechMutex.withLock {
             try {
                 if (isListening) {
-                    Log.d(TAG, "Stopping STT before speaking: $text")
+                    Log.d(TAG, "Stopping STT before speaking: $cleanedText")
                     sttManager.stopListening()
                     isListening = false
                     delay(250) // Brief pause to ensure STT is fully stopped
                 }
 
                 isSpeaking = true
-                Log.d(TAG, "Starting TTS: $text")
+                Log.d(TAG, "Starting TTS: $cleanedText")
 
                 // This is a suspend call that will wait until TTS is actually done.
-                ttsManager.speakText(text)
+                ttsManager.speakText(cleanedText)
 
                 // FIXED: The inaccurate, estimated delay has been removed!
 
-                Log.d(TAG, "TTS completed: $text")
+                Log.d(TAG, "TTS completed: $cleanedText")
 
             } finally {
                 // Ensure the speaking flag is always reset
@@ -73,22 +74,23 @@ class SpeechCoordinator private constructor(private val context: Context) {
      * @param text The text to speak to the user
      */
     suspend fun speakToUser(text: String) {
+        val cleanedText = text.replace("*", "")
         speechMutex.withLock {
             try {
                 if (isListening) {
-                    Log.d(TAG, "Stopping STT before speaking to user: $text")
+                    Log.d(TAG, "Stopping STT before speaking to user: $cleanedText")
                     sttManager.stopListening()
                     isListening = false
                     delay(250) // Brief pause
                 }
 
                 isSpeaking = true
-                Log.d(TAG, "Starting TTS to user: $text")
+                Log.d(TAG, "Starting TTS to user: $cleanedText")
 
-                ttsManager.speakToUser(text)
+                ttsManager.speakToUser(cleanedText)
 
 
-                Log.d(TAG, "TTS to user completed: $text")
+                Log.d(TAG, "TTS to user completed: $cleanedText")
 
             } finally {
                 // Ensure the speaking flag is always reset

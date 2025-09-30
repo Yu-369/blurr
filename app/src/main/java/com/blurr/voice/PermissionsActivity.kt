@@ -1,6 +1,7 @@
 package com.blurr.voice
 
 import android.Manifest
+import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -24,11 +25,13 @@ class PermissionsActivity : AppCompatActivity() {
     private lateinit var accessibilityStatus: TextView
     private lateinit var microphoneStatus: TextView
     private lateinit var overlayStatus: TextView
+    private lateinit var assistantStatus: TextView
 
     // NEW: Add Button variables
     private lateinit var grantAccessibilityButton: Button
     private lateinit var grantMicrophoneButton: Button
     private lateinit var grantOverlayButton: Button
+    private lateinit var grantAssistantButton: Button
 
     // NEW: Add a permission launcher for the microphone
     private val requestPermissionLauncher =
@@ -49,11 +52,13 @@ class PermissionsActivity : AppCompatActivity() {
         accessibilityStatus = findViewById(R.id.accessibilityStatus)
         microphoneStatus = findViewById(R.id.microphoneStatus)
         overlayStatus = findViewById(R.id.overlayStatus)
+        assistantStatus = findViewById(R.id.assistantStatus)
 
         // NEW: Find all Grant Buttons
         grantAccessibilityButton = findViewById(R.id.grantAccessibilityButton)
         grantMicrophoneButton = findViewById(R.id.grantMicrophoneButton)
         grantOverlayButton = findViewById(R.id.grantOverlayButton)
+        grantAssistantButton = findViewById(R.id.grantAssistantButton)
 
         val backButton: Button = findViewById(R.id.backButtonPermissions)
         backButton.setOnClickListener {
@@ -86,6 +91,17 @@ class PermissionsActivity : AppCompatActivity() {
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:$packageName")
                 )
+                startActivity(intent)
+            }
+        }
+
+        grantAssistantButton.setOnClickListener {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val roleManager = getSystemService(ROLE_SERVICE) as RoleManager
+                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT)
+                startActivityForResult(intent, 123)
+            } else {
+                val intent = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)
                 startActivity(intent)
             }
         }
@@ -151,6 +167,19 @@ class PermissionsActivity : AppCompatActivity() {
             overlayStatus.setBackgroundResource(R.drawable.status_background_denied)
             grantOverlayButton.visibility = View.VISIBLE
         }
+
+        // 4. Default Assistant Check
+        if (isDefaultAssistant()) {
+            assistantStatus.text = "Granted"
+            assistantStatus.setTextColor(Color.parseColor("#4CAF50"))
+            assistantStatus.setBackgroundResource(R.drawable.status_background_granted)
+            grantAssistantButton.visibility = View.GONE
+        } else {
+            assistantStatus.text = "Not Granted"
+            assistantStatus.setTextColor(Color.parseColor("#F44336"))
+            assistantStatus.setBackgroundResource(R.drawable.status_background_denied)
+            grantAssistantButton.visibility = View.VISIBLE
+        }
     }
 
     // --- Helper functions to check each permission (no changes here) ---
@@ -192,6 +221,16 @@ class PermissionsActivity : AppCompatActivity() {
             Settings.canDrawOverlays(this)
         } else {
             true // Granted at install time on older versions
+        }
+    }
+
+    private fun isDefaultAssistant(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(ROLE_SERVICE) as RoleManager
+            return roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)
+        } else {
+            val assistant = Settings.Secure.getString(contentResolver, "voice_interaction_service")
+            return assistant != null && assistant.contains(packageName)
         }
     }
 }

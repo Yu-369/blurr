@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
     private lateinit var settingsButton: ImageButton
     private lateinit var saveKeyButton: TextView
     private lateinit var userId: String
+    private lateinit var runExampleButton: TextView
     private lateinit var permissionManager: PermissionManager
     private lateinit var wakeWordManager: WakeWordManager
     private lateinit var auth: FirebaseAuth
@@ -183,6 +184,7 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
 
         // Initialize UI components
         managePermissionsButton = findViewById(R.id.btn_manage_permissions)
+        runExampleButton = findViewById(R.id.run_example_button)
 
         tvPermissionStatus = findViewById(R.id.tv_permission_status)
         settingsButton = findViewById(R.id.settingsButton)
@@ -327,6 +329,11 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
         }
         findViewById<TextView>(R.id.disclaimer_link).setOnClickListener {
             showDisclaimerDialog()
+        }
+        runExampleButton.setOnClickListener {
+            val youtubeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
+            startActivity(intent)
         }
     }
 
@@ -481,9 +488,11 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
         if (allPermissionsGranted) {
             tvPermissionStatus.text = "All required permissions are granted."
             managePermissionsButton.visibility = View.GONE
+            runExampleButton.visibility = View.VISIBLE
             tvPermissionStatus.setTextColor(Color.parseColor("#4CAF50")) // Green
         } else {
             tvPermissionStatus.text = "Some permissions are missing. Tap below to manage."
+            runExampleButton.visibility = View.GONE
             tvPermissionStatus.setTextColor(Color.parseColor("#F44336")) // Red
         }
     }

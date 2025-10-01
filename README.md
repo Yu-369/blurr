@@ -5,7 +5,7 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ayush0Chaudhary/blurr)
 ---
 
-# Demos:
+# Demos (Google Play app is Down):
 
 #### Explaining all the triggers of Panda
  [![Watch the video](https://img.youtube.com/vi/IDvuqmPyKZs/hqdefault.jpg)](https://www.youtube.com/embed/IDvuqmPyKZs)

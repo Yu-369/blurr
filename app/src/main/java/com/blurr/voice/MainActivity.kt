@@ -457,8 +457,11 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
                 goProButton.visibility = View.GONE
 
             } else if (tasksLeft != null && tasksLeft >= 0) {
-
-                tasksRemainingTextView.text = "You have $tasksLeft free tasks remaining."
+                if (tasksLeft > 0) {
+                    tasksRemainingTextView.text = "You have $tasksLeft free tasks remaining today."
+                } else {
+                    tasksRemainingTextView.text = "You have 0 free tasks left for today."
+                }
                 tasksRemainingTextView.visibility = View.VISIBLE
                 goProButton.visibility = View.VISIBLE
 
@@ -471,7 +474,8 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
             } else {
                 tasksRemainingTextView.visibility = View.GONE
                 increaseLimitsLink.visibility = View.GONE
-                goProButton.visibility = View.VISIBLE            }
+                goProButton.visibility = View.VISIBLE
+            }
         }
     }
 

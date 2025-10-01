@@ -80,6 +80,57 @@
                 android:textColor="@android:color/white"
                 android:visibility="gone" />
         </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/rounded_background"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/assistant_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="12dp"
+                    android:src="@drawable/ic_mic"
+                    app:tint="@color/white" />
+
+                <TextView
+                    android:id="@+id/assistantStatus"
+                    style="@style/PermissionStatus"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"/>
+
+                <TextView
+                    android:id="@+id/assistantHeading"
+                    style="@style/PermissionHeading"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@id/assistantStatus"
+                    android:layout_toEndOf="@id/assistant_icon"
+                    android:text="@string/default_assistant_permission_title" />
+            </RelativeLayout>
+
+            <TextView
+                style="@style/PermissionDescription"
+                android:text="@string/default_assistant_role_desc" />
+
+            <Button
+                android:id="@+id/grantAssistantButton"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/rounded_button_bg"
+                android:text="@string/grant_default_assistant_permission_button"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

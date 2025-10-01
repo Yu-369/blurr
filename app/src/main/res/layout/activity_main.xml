@@ -113,6 +113,22 @@
                 android:text="Go Pro"
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/run_example_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/rounded_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="12dp"
+                android:text="Run an Example"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/saveKeyButton"
                 android:layout_width="match_parent"

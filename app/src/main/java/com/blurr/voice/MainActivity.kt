@@ -35,6 +35,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.lifecycleScope
+import com.blurr.voice.v2.AgentService
 import com.blurr.voice.services.EnhancedWakeWordService
 import com.blurr.voice.utilities.FreemiumManager
 import com.blurr.voice.utilities.OnboardingManager
@@ -331,9 +332,8 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
             showDisclaimerDialog()
         }
         runExampleButton.setOnClickListener {
-            val youtubeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
-            startActivity(intent)
+            val task = "open youtube and play never gonna give you up"
+            AgentService.start(this, task)
         }
     }
 

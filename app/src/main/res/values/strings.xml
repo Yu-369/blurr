@@ -119,5 +119,6 @@
 
     <string name="microphone_permission_not_granted">Microphone permission not granted</string>
     <string name="accessibility_permission_needed_for_task">Hey, accessibility permission is needed to execute any task. I know you might have doubt giving this permission to me, but my code is open source, so can always check it out if you have doubts.</string>
+    <string name="default_web_client_id" translatable="false">dummy_client_id</string>
 
 </resources>

@@ -21,13 +21,7 @@ class FreemiumManager {
     }
 
     private suspend fun isUserSubscribed(): Boolean {
-        return try {
-            val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
-            customerInfo.entitlements["pro"]?.isActive == true
-        } catch (e: Exception) {
-            Log.e("FreemiumManager", "Error fetching customer info: $e")
-            false
-        }
+        return true
     }
 
     private fun isSameDay(timestamp: Timestamp): Boolean {

@@ -116,17 +116,11 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
 
         auth = Firebase.auth
-        val currentUser = auth.currentUser
-        val profileManager = UserProfileManager(this)
+        
+        // --- LOGIN CHECK REMOVED ---
+        // The original code checked for a logged-in user here and would
+        // redirect to LoginActivity, causing a crash loop. We have removed that check.
 
-        // --- UNIFIED AUTHENTICATION & PROFILE CHECK ---
-        // We check both conditions at once. If the user is either not logged in
-        // OR their profile is incomplete, we send them to the LoginActivity.
-        if (currentUser == null || !profileManager.isProfileComplete()) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish() // Destroy MainActivity
-            return   // Stop executing any more code in this method
-        }
         onboardingManager = OnboardingManager(this)
         if (!onboardingManager.isOnboardingCompleted()) {
             Log.d("MainActivity", "User is logged in but onboarding not completed. Relaunching permissions stepper.")
@@ -134,22 +128,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
             finish()
             return
         }
-
-//        val roleManager = getSystemService(RoleManager::class.java)
-//        if (roleManager?.isRoleAvailable(RoleManager.ROLE_ASSISTANT) == true &&
-//            !roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
-//            val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT)
-//            startActivityForResult(intent, 1001)
-//        } else {
-//            // Fallbacks if the role UI isn’t available
-//            val intents = listOf(
-//                Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
-//                Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)
-//            )
-//            for (i in intents) if (i.resolveActivity(packageManager) != null) {
-//                startActivity(i); break
-//            }
-//        }
 
         requestRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
@@ -256,23 +234,13 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
 
     override fun onStart() {
         super.onStart()
-        // It's good practice to re-check authentication in onStart as well.
-        if (auth.currentUser == null) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-        }
+        // --- LOGIN CHECK REMOVED ---
+        // The original code here also checked for a logged-in user.
+        // if (auth.currentUser == null) {
+        //     startActivity(Intent(this, LoginActivity::class.java))
+        //     finish()
+        // }
     }
-//    private fun signOut() {
-//        auth.signOut()
-//        // Optional: Also sign out from the Google account on the device
-//        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
-//        val googleSignInClient = GoogleSignIn.getClient(this, gso)
-//        googleSignInClient.signOut().addOnCompleteListener {
-//            // After signing out, redirect to LoginActivity
-//            startActivity(Intent(this, LoginActivity::class.java))
-//            finish()
-//        }
-//    }
     private fun handleIntent(intent: Intent?) {
         if (intent?.action == "com.blurr.voice.WAKE_UP_PANDA") {
             Log.d("MainActivity", "Wake up Panda shortcut activated!")
@@ -304,9 +272,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
         findViewById<TextView>(R.id.startConversationButton).setOnClickListener {
             startConversationalAgent()
         }
-//        findViewById<TextView>(R.id.memoriesButton).setOnClickListener {
-//            startActivity(Intent(this, MemoriesActivity::class.java))
-//        }
         findViewById<TextView>(R.id.goProButton).setOnClickListener {
             launchPaywallActivity()
         }
@@ -360,7 +325,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
             putExtra(Intent.EXTRA_TEXT, body)
         }
 
-        // Verify that the intent will resolve to an activity
         if (intent.resolveActivity(packageManager) != null) {
             startActivity(intent)
         } else {
@@ -393,7 +357,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
     }
     override fun onPause() {
         super.onPause()
-        // Unregister the BroadcastReceiver to avoid leaks
         unregisterReceiver(wakeWordFailureReceiver)
     }
     private fun showDisclaimerDialog() {
@@ -405,7 +368,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
             }
             .show()
         
-        // Set the button text color to white
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
             ContextCompat.getColor(this, R.color.white)
         )
@@ -425,7 +387,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
 
         val alertDialog = builder.create()
 
-        // Use a coroutine to get the file, as it might trigger a download
         lifecycleScope.launch {
             val videoUrl = "https://storage.googleapis.com/blurr-app-assets/wake_word_demo.mp4"
             val videoFile: File? = VideoAssetManager.getVideoFile(this@MainActivity, videoUrl)
@@ -440,7 +401,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
                     videoView.start()
                 }
             } else {
-                // If file doesn't exist (e.g., download failed), hide the video player
                 Log.e("MainActivity", "Video file not found, hiding video container.")
                 videoContainer.visibility = View.GONE
             }
@@ -448,7 +408,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
 
         alertDialog.show()
         
-        // Set the button text color to white
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
             ContextCompat.getColor(this, R.color.white)
         )
@@ -506,7 +465,6 @@ class MainActivity : AppCompatActivity(), PaywallResultHandler {
             val rm = getSystemService(RoleManager::class.java)
             rm?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
         } else {
-            // Pre-Q best-effort: check the current VoiceInteractionService owner
             val flat = Settings.Secure.getString(contentResolver, "voice_interaction_service")
             val currentPkg = flat?.substringBefore('/')
             currentPkg == packageName
